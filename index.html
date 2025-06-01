@@ -4687,7 +4687,7 @@ deleteLangButton.addEventListener('click', () => {
             if (!word) return;
             word.evolutionTimeline = word.evolutionTimeline || []; 
 
-            genericModalTitle.textContent = `วิวัฒนาการของคำ: ${getOrthographicForm(word.word)} [${word.word}]`;
+            genericModalTitle.textContent = `วิวัฒนาการของคำ: ${getOrthographicForm(word)}`;    
             let content = `<p class="text-sm mb-2">ติดตามการเปลี่ยนแปลงของคำนี้ผ่านยุคต่างๆ คำฐาน (เสียง): <strong class="font-mono">${word.word}</strong>, การออกเสียงฐาน (ละเอียด): <strong class="font-mono">${word.phonetics || 'N/A'}</strong></p>`;
 
             const sortedEras = [...currentLanguage.eras].sort((a,b) => (a.order || 0) - (b.order || 0));
@@ -5079,7 +5079,7 @@ deleteLangButton.addEventListener('click', () => {
             if (!word) return;
             word.dialectalForms = word.dialectalForms || []; 
 
-            genericModalTitle.textContent = `ภาษาถิ่นของคำ: ${getOrthographicForm(word.word)}`;
+            genericModalTitle.textContent = `ภาษาถิ่นของคำ: ${getOrthographicForm(word)}`;    
             let content = `<p class="text-sm mb-2">เพิ่ม/แก้ไขรูปคำในภาษาถิ่นต่างๆ สำหรับคำมาตรฐาน: <strong>${word.meaning}</strong> (รูปเสียงมาตรฐาน: <strong class="font-mono">${word.word}</strong>)</p>`;
 
             content += `<div id="dialectFormsContainerModal" class="space-y-3">`; 
