@@ -4350,7 +4350,7 @@ deleteLangButton.addEventListener('click', () => {
                     const word = section.querySelector('#orthoTestWord').value.trim(); 
                     const outputP = section.querySelector('#transliteratedOutputOrtho');
                     if (!word) { outputP.textContent = 'กรุณาป้อนคำ'; return; }
-                    outputP.textContent = transliterateWordToSymbols(word);
+                    outputP.textContent = getOrthographicForm(word);
                     outputP.style.direction = (ortho.direction === 'rtl' ? 'rtl' : 'ltr');
                     outputP.style.writingMode = (ortho.direction === 'ttb' ? 'vertical-rl' : 'horizontal-tb');
                 };
@@ -4390,7 +4390,7 @@ deleteLangButton.addEventListener('click', () => {
             const etymologyDatalistId = `dictionaryWordsForEtymologyDatalist_${Date.now()}`;
             let datalistOptions = '';
             (currentLanguage.lexicon || []).forEach(w => { 
-                datalistOptions += `<option value="${transliterateWordToSymbols(w.word)}" data-baseform="${w.word}">${w.meaning} [ฐาน: ${w.word}]</option>`;
+                datalistOptions += `<option value="${getOrthographicForm(w.word)}" data-baseform="${w.word}">${w.meaning} [ฐาน: ${w.word}]</option>`;
             });
 
             section.innerHTML = `
