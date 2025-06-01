@@ -508,7 +508,7 @@ deleteLangButton.addEventListener('click', () => {
         localStorage.removeItem('currentLanguageData');
 
         renderLanguageSelector();
-        updateUI();
+        updateUI(); // This will handle showing the name modal if no languages are left, or switching to another.
     }
 });
 
@@ -775,7 +775,9 @@ deleteLangButton.addEventListener('click', () => {
                 if (currentLanguage.name === '') { // Initial creation for the session
                     currentLanguage.name = name;
                 } else { // User clicked "Add New Language" button while another was active
-                    currentLanguage = ensureDeepStructure({ name: name }, DEFAULT_LANGUAGE_STATE);
+                    // Preserve current language data by saving it before creating a new one
+                    saveData(); // Save the *currently active* one to allLanguages
+                    currentLanguage = ensureDeepStructure({ name: name }, DEFAULT_LANGUAGE_STATE); // Now create the new one
                 }
                 
                 languageNameModal.classList.add('hidden');
@@ -791,7 +793,7 @@ deleteLangButton.addEventListener('click', () => {
                     currentLanguage.phonology.allowedFinalConsonants = currentLanguage.phonology.consonants.filter(c => commonFinals.includes(c));
                 }
 
-                saveData(); // This will add/update it in allLanguages
+                saveData(); // This will add/update the NEW currentLanguage in allLanguages
                 updateUI(); // This will re-render tabs, selector, etc.
             } else {
                 alert('กรุณาตั้งชื่อภาษาของคุณ');
@@ -841,6 +843,11 @@ deleteLangButton.addEventListener('click', () => {
                 // Or, decide if this means "unload current language". For now, revert.
                 if (currentLanguage.name) {
                     languageSelector.value = currentLanguage.name;
+                } else { // No current language active, perhaps one was just deleted or user is in name modal
+                    currentLanguageNameDisplay.textContent = 'N/A';
+                    mainContent.classList.add('disabled-section'); // Disable main content
+                    tabContainer.innerHTML = ''; // Clear tabs
+                    tabContentContainer.innerHTML = '<p class="text-center text-gray-500">กรุณาเลือกภาษาจากเมนูด้านบน หรือสร้างภาษาใหม่</p>';
                 }
             }
         }
@@ -857,7 +864,7 @@ deleteLangButton.addEventListener('click', () => {
                 nextWordId = calculateNextWordId(currentLanguage.lexicon);
                 nextConjCategoryId = calculateNextId(currentLanguage.grammar.morphology.conjugationCategories || [], 'cat_');
                 nextConjRuleId = calculateNextId(currentLanguage.grammar.morphology.conjugationRules || [], 'rule_');
-                // nextRuleStepId is handled by ensureDeepStructure for the loaded language context
+                // nextRuleStepId is recalculated within ensureDeepStructure based on the loaded language's content.
                 nextExternalNodeId = calculateNextId(currentLanguage.languageFamily.externalNodes || [], 'ext_');
                 nextActiveSoundChangeId = calculateNextId(currentLanguage.phonology.activeSoundChanges || [], 'asc_');
                 nextToneId = calculateNextId(currentLanguage.phonology.tones || [], 'tone_');
@@ -995,7 +1002,11 @@ deleteLangButton.addEventListener('click', () => {
             } else if (allLanguages.length > 0 && !currentLanguage.name) { 
                  // If current lang is unnamed (being created) but others exist, selector should show none
                  languageSelector.value = ""; 
-            } else { // No current lang name, no previous selection, or current not in list
+            } else if (allLanguages.length > 0 ) { // if a language was deleted and current became {}, select the first available
+                languageSelector.value = allLanguages[0].name;
+                switchLanguage(allLanguages[0].name);
+            }
+             else { // No current lang name, no previous selection, or current not in list
                  languageSelector.value = "";
             }
         }
@@ -1015,7 +1026,7 @@ deleteLangButton.addEventListener('click', () => {
                 }
                 tabContainer.innerHTML = ''; // No tabs to show
                 tabContentContainer.innerHTML = ''; // No content
-            } else { // Current language is unnamed (e.g. "Add New" clicked), but other languages might exist
+            } else { // Current language is unnamed (e.g. "Add New" clicked), or no language selected from dropdown
                 currentLanguageNameDisplay.textContent = 'N/A';
                 if (!languageNameModal.classList.contains('hidden')) { // If name modal is up for the new lang
                     mainContent.classList.add('disabled-section');
@@ -1027,6 +1038,7 @@ deleteLangButton.addEventListener('click', () => {
                      tabContentContainer.innerHTML = '<p class="text-center text-gray-500">กรุณาเลือกภาษาจากเมนูด้านบน หรือสร้างภาษาใหม่</p>';
                 }
             }
+             renderLanguageSelector(); // Keep selector updated
         }
 
         function renderTabs() {
@@ -1053,8 +1065,8 @@ deleteLangButton.addEventListener('click', () => {
                  renderTabs(); // Re-render tab buttons to reflect active state
                  return;
             }
-             // If language is unnamed, modal is hidden, but other languages *do* exist (e.g. user hit "Add New" then closed modal)
-             if (!currentLanguage.name && languageNameModal.classList.contains('hidden') && allLanguages.length > 0) {
+             // If language is unnamed, modal is hidden, but other languages *do* exist (e.g. user hit "Add New" then closed modal, or selected "--เลือกภาษา--")
+             if (!currentLanguage.name && languageNameModal.classList.contains('hidden') && (allLanguages.length > 0 || languageSelector.value === "")) {
                  tabContentContainer.innerHTML = '<p class="text-center text-gray-500">กรุณาตั้งชื่อภาษาใหม่ของคุณ หรือเลือกภาษาที่มีอยู่</p>';
                  activeTab = tabId;
                  renderTabs();
@@ -3643,7 +3655,7 @@ deleteLangButton.addEventListener('click', () => {
                         )
                         .slice(0, 10); 
 
-                    suggestionsContainer.innerHTML = '';
+                     suggestionsContainer.innerHTML = '';
                     if (suggestions.length > 0) {
                         suggestions.forEach(suggestion => {
                             const div = document.createElement('div');
@@ -4433,7 +4445,7 @@ deleteLangButton.addEventListener('click', () => {
                 return;
             }
 
-            let resultHTML = `<h3 class="text-lg font-semibold text-teal-600">${transliterateWordToSymbols(wordEntry.word)} <span class="text-sm text-gray-500 font-mono">(${wordEntry.word})</span></h3>`;
+            let resultHTML = `<h3 class="text-lg font-semibold text-teal-600">${getOrthographicForm(word)} <span class="text-sm text-gray-500 font-mono">(${wordEntry.word})</span></h3>`;
             resultHTML += `<p class="text-sm text-gray-600"><strong>ความหมาย:</strong> ${wordEntry.meaning}</p>`;
             if (wordEntry.etymology && (wordEntry.etymology.roots && wordEntry.etymology.roots.length > 0 || wordEntry.etymology.notes)) {
                 if (wordEntry.etymology.notes) resultHTML += `<p class="text-sm mt-1"><strong>หมายเหตุ:</strong> ${wordEntry.etymology.notes}</p>`;
@@ -4696,7 +4708,7 @@ deleteLangButton.addEventListener('click', () => {
             if (!word) return;
             word.evolutionTimeline = word.evolutionTimeline || []; 
 
-            genericModalTitle.textContent = `วิวัฒนาการของคำ: ${transliterateWordToSymbols(word.word)} [${word.word}]`;
+            genericModalTitle.textContent = ` ${getOrthographicForm(word)} [${word.word}]`;
             let content = `<p class="text-sm mb-2">ติดตามการเปลี่ยนแปลงของคำนี้ผ่านยุคต่างๆ คำฐาน (เสียง): <strong class="font-mono">${word.word}</strong>, การออกเสียงฐาน (ละเอียด): <strong class="font-mono">${word.phonetics || 'N/A'}</strong></p>`;
 
             const sortedEras = [...currentLanguage.eras].sort((a,b) => (a.order || 0) - (b.order || 0));
@@ -5088,7 +5100,7 @@ deleteLangButton.addEventListener('click', () => {
             if (!word) return;
             word.dialectalForms = word.dialectalForms || []; 
 
-            genericModalTitle.textContent = `ภาษาถิ่นของคำ: ${transliterateWordToSymbols(word.word)}`;
+            genericModalTitle.textContent = `ภาษาถิ่นของคำ: ${getOrthographicForm(word)}`;
             let content = `<p class="text-sm mb-2">เพิ่ม/แก้ไขรูปคำในภาษาถิ่นต่างๆ สำหรับคำมาตรฐาน: <strong>${word.meaning}</strong> (รูปเสียงมาตรฐาน: <strong class="font-mono">${word.word}</strong>)</p>`;
 
             content += `<div id="dialectFormsContainerModal" class="space-y-3">`; 
