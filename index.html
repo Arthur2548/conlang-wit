@@ -4422,7 +4422,7 @@ deleteLangButton.addEventListener('click', () => {
                 if (selectedOpt && selectedOpt.dataset.baseform) {
                      wordEntry = (currentLanguage.lexicon || []).find(w => w.word === selectedOpt.dataset.baseform);
                 } else { 
-                     wordEntry = (currentLanguage.lexicon || []).find(w => w.word === searchTerm || transliterateWordToSymbols(w.word) === searchTerm);
+                     wordEntry = (currentLanguage.lexicon || []).find(w => w.word === searchTerm || getOrthographicForm(word)=== searchTerm);
                 }
                 displayEtymologyForWord(wordEntry ? wordEntry.id : null, searchTerm);
             };
@@ -4454,7 +4454,7 @@ deleteLangButton.addEventListener('click', () => {
                     wordEntry.etymology.roots.forEach(root => {
                         if (root.wordId) {
                             const parentWord = (currentLanguage.lexicon || []).find(w => w.id === root.wordId);
-                            resultHTML += `<li>จากคำว่า: <strong>${parentWord ? transliterateWordToSymbols(parentWord.word) : 'คำที่ถูกลบ'}</strong> <span class="font-mono text-xs text-gray-500">[${parentWord ? parentWord.word : 'N/A'}]</span></li>`;
+                            resultHTML += `<li>จากคำว่า: <strong>${parentWord ? getOrthographicForm(parentWord.word) : 'คำที่ถูกลบ'}</strong> <span class="font-mono text-xs text-gray-500">[${parentWord ? parentWord.word : 'N/A'}]</span></li>`;
                         } else if (root.customRoot) {
                             resultHTML += `<li>มาจาก: <strong>${root.customRoot}</strong> (ภาษา: ${root.sourceLang || 'ไม่ระบุ'})</li>`;
                         }
@@ -4473,7 +4473,7 @@ deleteLangButton.addEventListener('click', () => {
                 const emptyNode = document.createElement('ul');
                 if (wordEntry && visited.has(wordEntry.id)) { 
                      const li = document.createElement('li');
-                     li.innerHTML = `<span class="pedigree-node italic text-xs">อ้างอิงซ้ำ: ${transliterateWordToSymbols(wordEntry.word)}</span>`;
+                     li.innerHTML = `<span class="pedigree-node italic text-xs">อ้างอิงซ้ำ: ${getOrthographicForm(wordEntry.word)}</span>`;
                      emptyNode.appendChild(li);
                 }
                 return emptyNode;
@@ -4487,7 +4487,7 @@ deleteLangButton.addEventListener('click', () => {
             if (wordEntry.id === searchedWordId && isRootOfSearch) { 
                 nodeClass += ' searched font-bold'; 
             }
-            li.innerHTML = `<span class="${nodeClass}">${transliterateWordToSymbols(wordEntry.word)}</span> <span class="text-xs text-gray-500 font-mono">(${wordEntry.word})</span> <span class="text-xs text-gray-500">(${wordEntry.meaning})</span>`;
+            li.innerHTML = `<span class="${nodeClass}">${getOrthographicForm(wordEntry.word)}</span> <span class="text-xs text-gray-500 font-mono">(${wordEntry.word})</span> <span class="text-xs text-gray-500">(${wordEntry.meaning})</span>`;
 
             if (wordEntry.etymology && wordEntry.etymology.roots && wordEntry.etymology.roots.length > 0) {
                 const ancestorsUl = document.createElement('ul');
