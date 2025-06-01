@@ -408,7 +408,8 @@
             { id: 'langFamily', name: '🌳 ตระกูลภาษา', icon: 'fas fa-sitemap', contentFunc: renderLangFamilyUI, menu: true },
             { id: 'soundChanges', name: '🔄 กฎการเปลี่ยนเสียง (ระหว่างภาษา)', icon: 'fas fa-exchange-alt', contentFunc: renderSoundChangesInterLangUI, menu: true },
             { id: 'tools', name: '🛠️ เครื่องมือ', icon: 'fas fa-tools', contentFunc: renderToolsUI, menu: true },
-           
+            { id: 'ipaProgram', name: '🗣️ โปรแกรมสัทอักษร', icon: 'fas fa-microphone-alt', contentFunc: () => tabContentContainer.innerHTML = '<p>โปรแกรมแสดงสัทอักษร (รอพัฒนา)</p>', menu: true, disabled: true },
+            { id: 'thaiApp', name: '🇹🇭 ประยุกต์ใช้ในภาษาไทย', icon: 'fas fa-chalkboard-teacher', contentFunc: () => tabContentContainer.innerHTML = '<p>การประยุกต์ใช้ในวิชาภาษาไทย (รอพัฒนา)</p>', menu: true, disabled: true },
         ];
 
         // --- API Functions ---
@@ -508,7 +509,7 @@ deleteLangButton.addEventListener('click', () => {
         localStorage.removeItem('currentLanguageData');
 
         renderLanguageSelector();
-        updateUI(); // This will handle showing the name modal if no languages are left, or switching to another.
+        updateUI();
     }
 });
 
@@ -775,9 +776,7 @@ deleteLangButton.addEventListener('click', () => {
                 if (currentLanguage.name === '') { // Initial creation for the session
                     currentLanguage.name = name;
                 } else { // User clicked "Add New Language" button while another was active
-                    // Preserve current language data by saving it before creating a new one
-                    saveData(); // Save the *currently active* one to allLanguages
-                    currentLanguage = ensureDeepStructure({ name: name }, DEFAULT_LANGUAGE_STATE); // Now create the new one
+                    currentLanguage = ensureDeepStructure({ name: name }, DEFAULT_LANGUAGE_STATE);
                 }
                 
                 languageNameModal.classList.add('hidden');
@@ -793,7 +792,7 @@ deleteLangButton.addEventListener('click', () => {
                     currentLanguage.phonology.allowedFinalConsonants = currentLanguage.phonology.consonants.filter(c => commonFinals.includes(c));
                 }
 
-                saveData(); // This will add/update the NEW currentLanguage in allLanguages
+                saveData(); // This will add/update it in allLanguages
                 updateUI(); // This will re-render tabs, selector, etc.
             } else {
                 alert('กรุณาตั้งชื่อภาษาของคุณ');
@@ -843,11 +842,6 @@ deleteLangButton.addEventListener('click', () => {
                 // Or, decide if this means "unload current language". For now, revert.
                 if (currentLanguage.name) {
                     languageSelector.value = currentLanguage.name;
-                } else { // No current language active, perhaps one was just deleted or user is in name modal
-                    currentLanguageNameDisplay.textContent = 'N/A';
-                    mainContent.classList.add('disabled-section'); // Disable main content
-                    tabContainer.innerHTML = ''; // Clear tabs
-                    tabContentContainer.innerHTML = '<p class="text-center text-gray-500">กรุณาเลือกภาษาจากเมนูด้านบน หรือสร้างภาษาใหม่</p>';
                 }
             }
         }
@@ -864,7 +858,7 @@ deleteLangButton.addEventListener('click', () => {
                 nextWordId = calculateNextWordId(currentLanguage.lexicon);
                 nextConjCategoryId = calculateNextId(currentLanguage.grammar.morphology.conjugationCategories || [], 'cat_');
                 nextConjRuleId = calculateNextId(currentLanguage.grammar.morphology.conjugationRules || [], 'rule_');
-                // nextRuleStepId is recalculated within ensureDeepStructure based on the loaded language's content.
+                // nextRuleStepId is handled by ensureDeepStructure for the loaded language context
                 nextExternalNodeId = calculateNextId(currentLanguage.languageFamily.externalNodes || [], 'ext_');
                 nextActiveSoundChangeId = calculateNextId(currentLanguage.phonology.activeSoundChanges || [], 'asc_');
                 nextToneId = calculateNextId(currentLanguage.phonology.tones || [], 'tone_');
@@ -1002,11 +996,7 @@ deleteLangButton.addEventListener('click', () => {
             } else if (allLanguages.length > 0 && !currentLanguage.name) { 
                  // If current lang is unnamed (being created) but others exist, selector should show none
                  languageSelector.value = ""; 
-            } else if (allLanguages.length > 0 ) { // if a language was deleted and current became {}, select the first available
-                languageSelector.value = allLanguages[0].name;
-                switchLanguage(allLanguages[0].name);
-            }
-             else { // No current lang name, no previous selection, or current not in list
+            } else { // No current lang name, no previous selection, or current not in list
                  languageSelector.value = "";
             }
         }
@@ -1026,7 +1016,7 @@ deleteLangButton.addEventListener('click', () => {
                 }
                 tabContainer.innerHTML = ''; // No tabs to show
                 tabContentContainer.innerHTML = ''; // No content
-            } else { // Current language is unnamed (e.g. "Add New" clicked), or no language selected from dropdown
+            } else { // Current language is unnamed (e.g. "Add New" clicked), but other languages might exist
                 currentLanguageNameDisplay.textContent = 'N/A';
                 if (!languageNameModal.classList.contains('hidden')) { // If name modal is up for the new lang
                     mainContent.classList.add('disabled-section');
@@ -1038,7 +1028,6 @@ deleteLangButton.addEventListener('click', () => {
                      tabContentContainer.innerHTML = '<p class="text-center text-gray-500">กรุณาเลือกภาษาจากเมนูด้านบน หรือสร้างภาษาใหม่</p>';
                 }
             }
-             renderLanguageSelector(); // Keep selector updated
         }
 
         function renderTabs() {
@@ -1065,8 +1054,8 @@ deleteLangButton.addEventListener('click', () => {
                  renderTabs(); // Re-render tab buttons to reflect active state
                  return;
             }
-             // If language is unnamed, modal is hidden, but other languages *do* exist (e.g. user hit "Add New" then closed modal, or selected "--เลือกภาษา--")
-             if (!currentLanguage.name && languageNameModal.classList.contains('hidden') && (allLanguages.length > 0 || languageSelector.value === "")) {
+             // If language is unnamed, modal is hidden, but other languages *do* exist (e.g. user hit "Add New" then closed modal)
+             if (!currentLanguage.name && languageNameModal.classList.contains('hidden') && allLanguages.length > 0) {
                  tabContentContainer.innerHTML = '<p class="text-center text-gray-500">กรุณาตั้งชื่อภาษาใหม่ของคุณ หรือเลือกภาษาที่มีอยู่</p>';
                  activeTab = tabId;
                  renderTabs();
@@ -2152,7 +2141,7 @@ deleteLangButton.addEventListener('click', () => {
 
         // Function to get orthographic form, with an option to use the first grapheme for deterministic output
         // (e.g., for consistent display in inflection tables)
-        function getOrthographicForm(wordEntry, forDisplay = true, useFirstGraphemeForConsistency = true) {
+        function getOrthographicForm(wordEntry, forDisplay = true, useFirstGraphemeForAutoInflection = false) {
             if (!wordEntry) return "";
             // If a custom orthography is defined for the word, always use it.
             if (wordEntry.customOrthography) {
@@ -2161,15 +2150,15 @@ deleteLangButton.addEventListener('click', () => {
             // Otherwise, transliterate the base phonemic form.
             // wordEntry.word is expected to be the base phonemic form including any tone markers.
             const basePhonemicForm = typeof wordEntry.word === 'string' ? wordEntry.word : '';
-            // Pass the useFirstGraphemeForConsistency flag to transliterateWordToSymbols.
-            return transliterateWordToSymbols(basePhonemicForm, forDisplay, useFirstGraphemeForConsistency);
+            // Pass the useFirstGraphemeForAutoInflection flag to transliterateWordToSymbols.
+            return transliterateWordToSymbols(basePhonemicForm, forDisplay, useFirstGraphemeForAutoInflection);
         }
 
 
         // Function to transliterate a phonemic word string into its orthographic representation based on current language settings.
         // Parameters:
         // - wordString: The phonemic string to transliterate.
-        // - forDisplay: Boolean, if true, considers displayTonesInOrthography.
+        // - forDisplay: Boolean, if true, considers displayTonesInOrthography. (Currently always true when called from getOrthographicForm)
         // - useFirstGraphemeOnly: Boolean, if true, selects the first available grapheme from mappings for determinism. Otherwise, selects randomly.
         function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraphemeOnly = false) {
             if (!wordString && typeof wordString !== 'string') return ""; 
@@ -2346,7 +2335,8 @@ deleteLangButton.addEventListener('click', () => {
                 }
                 
                 const detailedPhonetics = autoFormatDetailedPhonetics(finalPhoneticWord, currentLanguage.phonology);
-                // For word generation list display, use random grapheme selection (useFirstGraphemeForConsistency = false).
+                // For word generation list display, use random grapheme selection (useFirstGraphemeForAutoInflection = false).
+                // The specific generated displayWord will be passed to showWordModal if the user decides to add it.
                 const displayWord = getOrthographicForm({word: finalPhoneticWord, customOrthography: null}, true, false);
 
 
@@ -2371,7 +2361,7 @@ deleteLangButton.addEventListener('click', () => {
                 const addButton = document.createElement('button');
                 addButton.innerHTML = '➕ <span class="hidden sm:inline">เพิ่มในพจนานุกรม</span>';
                 addButton.className = 'ml-auto text-xs btn-secondary bg-green-400 hover:bg-green-500 px-2 py-1 rounded whitespace-nowrap';
-                // Pass the initially generated displayWord to showWordModal so it can be set as customOrthography by default
+                // Pass the initially generated displayWord to showWordModal
                 addButton.onclick = () => showWordModal(null, finalPhoneticWord, detailedPhonetics, randomMeaning, displayWord); 
                 listItem.appendChild(addButton);
                 listElement.appendChild(listItem);
@@ -3368,7 +3358,7 @@ deleteLangButton.addEventListener('click', () => {
                     if (manualInflection && manualInflection.phonetic) { 
                         inflectedPhoneticForm = manualInflection.phonetic;
                         // For manual overrides, customOrthography field of the manualInflection should be used if present.
-                        // If not, transliterate the manual phonetic form (using first grapheme rule for consistency).
+                        // If not, transliterate the manual phonetic form (using first grapheme rule).
                         inflectedOrthographicForm = manualInflection.orthographic || getOrthographicForm({word: inflectedPhoneticForm, customOrthography: null}, true, true);
                         isManual = true;
                     } else {
@@ -3381,7 +3371,7 @@ deleteLangButton.addEventListener('click', () => {
                             // For rule-generated forms, use the first grapheme rule for consistency.
                             inflectedOrthographicForm = getOrthographicForm({word: inflectedPhoneticForm, customOrthography: null}, true, true);
                         } else {
-                            // No rule, no manual override: show base form, transliterated with first grapheme rule for consistency.
+                            // No rule, no manual override: show base form, transliterated with first grapheme rule.
                             inflectedPhoneticForm = wordEntry.word;
                             inflectedOrthographicForm = getOrthographicForm({word: wordEntry.word, customOrthography: null}, true, true);
                         }
@@ -3655,7 +3645,7 @@ deleteLangButton.addEventListener('click', () => {
                         )
                         .slice(0, 10); 
 
-                     suggestionsContainer.innerHTML = '';
+                    suggestionsContainer.innerHTML = '';
                     if (suggestions.length > 0) {
                         suggestions.forEach(suggestion => {
                             const div = document.createElement('div');
@@ -3969,7 +3959,7 @@ deleteLangButton.addEventListener('click', () => {
         }
 
 
-        window.showWordModal = (wordId = null, generatedWordPhoneticForm = null, generatedPhoneticsDetail = null, generatedMeaning = null, generatedDisplayWord = null) => {
+        window.showWordModal = (wordId = null, generatedWordPhoneticForm = null, generatedPhoneticsDetail = null, generatedMeaning = null) => {
             const existingWord = wordId ? currentLanguage.lexicon.find(w => w.id === wordId) : null;
             const modalId = 'wordEditModal';
             let modal = document.getElementById(modalId);
@@ -3980,10 +3970,7 @@ deleteLangButton.addEventListener('click', () => {
             modal.className = 'fixed inset-0 z-[70] flex items-center justify-center modal p-4'; 
 
             const initialWordValue = existingWord ? existingWord.word : (generatedWordPhoneticForm || '');
-            const initialCustomOrthography = existingWord 
-                ? (existingWord.customOrthography || '') 
-                : (generatedDisplayWord || ''); // Use generatedDisplayWord if adding new from generator
-
+            const initialCustomOrthography = existingWord ? (existingWord.customOrthography || '') : ''; // Ensure it's a string
             
             let initialPhonetics;
             if (existingWord && existingWord.phonetics) { initialPhonetics = existingWord.phonetics; } 
@@ -4023,7 +4010,7 @@ deleteLangButton.addEventListener('click', () => {
             modal.innerHTML = `
                 <div class="modal-content p-6 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                     <h3 class="text-xl font-bold mb-4">${existingWord ? 'แก้ไขคำศัพท์: ' + getOrthographicForm(existingWord) : 'เพิ่มคำศัพท์ใหม่'}</h3>
-                    <p class="text-xs text-gray-500 mb-2">รูปคำศัพท์ (รูปฐานเสียง) ควรเป็นรูปเสียงสุดท้ายหลังใช้กฎ Active Sound Changes และรวมเสียงวรรณยุกต์แล้ว (ถ้ามี)</p>
+                    <p class="text-xs text-gray-500 mb-2">รูปคำศัพท์ (รูปฐาน) ควรเป็นรูปเสียงสุดท้ายหลังใช้กฎ Active Sound Changes และรวมเสียงวรรณยุกต์แล้ว (ถ้ามี)</p>
                     <div class="space-y-3">
                         <div><label class="block text-sm font-medium">คำศัพท์ (รูปฐานเสียง):</label><input type="text" id="modalWord" value="${initialWordValue}" class="w-full p-2 border rounded-md font-mono"></div>
                         <div><label class="block text-sm font-medium">คำศัพท์ (อักขรวิธี - กำหนดเอง ถ้าต้องการ):</label><input type="text" id="modalCustomOrthography" value="${initialCustomOrthography}" class="w-full p-2 border rounded-md font-mono" placeholder="ปล่อยว่างเพื่อใช้กฎอัตโนมัติ"></div>
@@ -4061,17 +4048,9 @@ deleteLangButton.addEventListener('click', () => {
             const updateDerivedForms = () => {
                 const basePhonemic = modalWordInput.value;
                 modalPhoneticsInput.value = autoFormatDetailedPhonetics(basePhonemic, currentLanguage.phonology);
-                // Only auto-update custom orthography if it was initially empty (meaning user hasn't explicitly set it)
-                // AND this is for a new word being added (not editing existing)
-                if (!existingWord && modalCustomOrthographyInput.placeholder === "ปล่อยว่างเพื่อใช้กฎอัตโนมัติ" && modalCustomOrthographyInput.value === '') {
-                    modalCustomOrthographyInput.value = getOrthographicForm({word: basePhonemic, customOrthography:null}, true, true);
-                }
             };
             modalWordInput.addEventListener('input', updateDerivedForms);
             modalWordInput.addEventListener('change', updateDerivedForms);
-            if (!existingWord && generatedDisplayWord) { // If new word from generator, trigger update once to populate orthography
-                updateDerivedForms();
-            }
 
 
             const modalPosSelect = modal.querySelector('#modalPartOfSpeech');
@@ -4350,7 +4329,7 @@ deleteLangButton.addEventListener('click', () => {
                     const word = section.querySelector('#orthoTestWord').value.trim(); 
                     const outputP = section.querySelector('#transliteratedOutputOrtho');
                     if (!word) { outputP.textContent = 'กรุณาป้อนคำ'; return; }
-                    outputP.textContent = getOrthographicForm(word);
+                    outputP.textContent = transliterateWordToSymbols(word);
                     outputP.style.direction = (ortho.direction === 'rtl' ? 'rtl' : 'ltr');
                     outputP.style.writingMode = (ortho.direction === 'ttb' ? 'vertical-rl' : 'horizontal-tb');
                 };
@@ -4390,7 +4369,7 @@ deleteLangButton.addEventListener('click', () => {
             const etymologyDatalistId = `dictionaryWordsForEtymologyDatalist_${Date.now()}`;
             let datalistOptions = '';
             (currentLanguage.lexicon || []).forEach(w => { 
-                datalistOptions += `<option value="${getOrthographicForm(w.word)}" data-baseform="${w.word}">${w.meaning} [ฐาน: ${w.word}]</option>`;
+                datalistOptions += `<option value="${transliterateWordToSymbols(w.word)}" data-baseform="${w.word}">${w.meaning} [ฐาน: ${w.word}]</option>`;
             });
 
             section.innerHTML = `
@@ -4422,7 +4401,7 @@ deleteLangButton.addEventListener('click', () => {
                 if (selectedOpt && selectedOpt.dataset.baseform) {
                      wordEntry = (currentLanguage.lexicon || []).find(w => w.word === selectedOpt.dataset.baseform);
                 } else { 
-                     wordEntry = (currentLanguage.lexicon || []).find(w => w.word === searchTerm || getOrthographicForm(word)=== searchTerm);
+                     wordEntry = (currentLanguage.lexicon || []).find(w => w.word === searchTerm || transliterateWordToSymbols(w.word) === searchTerm);
                 }
                 displayEtymologyForWord(wordEntry ? wordEntry.id : null, searchTerm);
             };
@@ -4445,7 +4424,7 @@ deleteLangButton.addEventListener('click', () => {
                 return;
             }
 
-            let resultHTML = `<h3 class="text-lg font-semibold text-teal-600">${getOrthographicForm(word)} <span class="text-sm text-gray-500 font-mono">(${wordEntry.word})</span></h3>`;
+            let resultHTML = `<h3 class="text-lg font-semibold text-teal-600">${transliterateWordToSymbols(wordEntry.word)} <span class="text-sm text-gray-500 font-mono">(${wordEntry.word})</span></h3>`;
             resultHTML += `<p class="text-sm text-gray-600"><strong>ความหมาย:</strong> ${wordEntry.meaning}</p>`;
             if (wordEntry.etymology && (wordEntry.etymology.roots && wordEntry.etymology.roots.length > 0 || wordEntry.etymology.notes)) {
                 if (wordEntry.etymology.notes) resultHTML += `<p class="text-sm mt-1"><strong>หมายเหตุ:</strong> ${wordEntry.etymology.notes}</p>`;
@@ -4454,7 +4433,7 @@ deleteLangButton.addEventListener('click', () => {
                     wordEntry.etymology.roots.forEach(root => {
                         if (root.wordId) {
                             const parentWord = (currentLanguage.lexicon || []).find(w => w.id === root.wordId);
-                            resultHTML += `<li>จากคำว่า: <strong>${parentWord ? getOrthographicForm(parentWord.word) : 'คำที่ถูกลบ'}</strong> <span class="font-mono text-xs text-gray-500">[${parentWord ? parentWord.word : 'N/A'}]</span></li>`;
+                            resultHTML += `<li>จากคำว่า: <strong>${parentWord ? transliterateWordToSymbols(parentWord.word) : 'คำที่ถูกลบ'}</strong> <span class="font-mono text-xs text-gray-500">[${parentWord ? parentWord.word : 'N/A'}]</span></li>`;
                         } else if (root.customRoot) {
                             resultHTML += `<li>มาจาก: <strong>${root.customRoot}</strong> (ภาษา: ${root.sourceLang || 'ไม่ระบุ'})</li>`;
                         }
@@ -4473,7 +4452,7 @@ deleteLangButton.addEventListener('click', () => {
                 const emptyNode = document.createElement('ul');
                 if (wordEntry && visited.has(wordEntry.id)) { 
                      const li = document.createElement('li');
-                     li.innerHTML = `<span class="pedigree-node italic text-xs">อ้างอิงซ้ำ: ${getOrthographicForm(wordEntry.word)}</span>`;
+                     li.innerHTML = `<span class="pedigree-node italic text-xs">อ้างอิงซ้ำ: ${transliterateWordToSymbols(wordEntry.word)}</span>`;
                      emptyNode.appendChild(li);
                 }
                 return emptyNode;
@@ -4487,7 +4466,7 @@ deleteLangButton.addEventListener('click', () => {
             if (wordEntry.id === searchedWordId && isRootOfSearch) { 
                 nodeClass += ' searched font-bold'; 
             }
-            li.innerHTML = `<span class="${nodeClass}">${getOrthographicForm(wordEntry.word)}</span> <span class="text-xs text-gray-500 font-mono">(${wordEntry.word})</span> <span class="text-xs text-gray-500">(${wordEntry.meaning})</span>`;
+            li.innerHTML = `<span class="${nodeClass}">${transliterateWordToSymbols(wordEntry.word)}</span> <span class="text-xs text-gray-500 font-mono">(${wordEntry.word})</span> <span class="text-xs text-gray-500">(${wordEntry.meaning})</span>`;
 
             if (wordEntry.etymology && wordEntry.etymology.roots && wordEntry.etymology.roots.length > 0) {
                 const ancestorsUl = document.createElement('ul');
@@ -4708,7 +4687,7 @@ deleteLangButton.addEventListener('click', () => {
             if (!word) return;
             word.evolutionTimeline = word.evolutionTimeline || []; 
 
-            genericModalTitle.textContent = ` ${getOrthographicForm(word)} [${word.word}]`;
+            genericModalTitle.textContent = `วิวัฒนาการของคำ: ${tgetOrthographicForm(word.word)} [${word.word}]`;
             let content = `<p class="text-sm mb-2">ติดตามการเปลี่ยนแปลงของคำนี้ผ่านยุคต่างๆ คำฐาน (เสียง): <strong class="font-mono">${word.word}</strong>, การออกเสียงฐาน (ละเอียด): <strong class="font-mono">${word.phonetics || 'N/A'}</strong></p>`;
 
             const sortedEras = [...currentLanguage.eras].sort((a,b) => (a.order || 0) - (b.order || 0));
@@ -5100,7 +5079,7 @@ deleteLangButton.addEventListener('click', () => {
             if (!word) return;
             word.dialectalForms = word.dialectalForms || []; 
 
-            genericModalTitle.textContent = `ภาษาถิ่นของคำ: ${getOrthographicForm(word)}`;
+            genericModalTitle.textContent = `ภาษาถิ่นของคำ: ${getOrthographicForm(word.word)}`;
             let content = `<p class="text-sm mb-2">เพิ่ม/แก้ไขรูปคำในภาษาถิ่นต่างๆ สำหรับคำมาตรฐาน: <strong>${word.meaning}</strong> (รูปเสียงมาตรฐาน: <strong class="font-mono">${word.word}</strong>)</p>`;
 
             content += `<div id="dialectFormsContainerModal" class="space-y-3">`; 
