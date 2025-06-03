@@ -6,6 +6,8 @@
     <title>โปรแกรมประดิษฐภาษา</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <!-- Added SheetJS library for XLSX export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body {
             font-family: 'Inter', 'Kanit', sans-serif;
@@ -222,7 +224,8 @@
                     <button id="deleteLangButton" class="btn-secondary py-2 px-3 rounded-md font-semibold text-sm whitespace-nowrap">
                         <i class="fas fa-trash-alt mr-1"></i> ลบภาษา
                     </button>
-                    <a href="https://arthur2548.github.io/ipaConlang/" target="_blank" id="ipaConverterToolButton" class="btn-secondary py-2 px-3 rounded-md font-semibold text-sm hidden sm:inline-block whitespace-nowrap"><i class="fas fa-language mr-1"></i> แปลงสัทอักษร IPA</a>
+                    <!-- IPA Tool Button -->
+                    <a href="https://arthur2548.github.io/ipaConlang/" target="_blank" id="ipaToolButton" class="btn-secondary py-2 px-3 rounded-md font-semibold text-sm hidden sm:inline-block">🛠️ เครื่องมือแปลงสัทอักษร</a>
                     <button id="aboutButton" class="btn-secondary py-2 px-3 rounded-md font-semibold text-sm hidden sm:inline-block">📜 เกี่ยวกับ</button>
                 </div>
             </div>
@@ -2145,7 +2148,7 @@ deleteLangButton.addEventListener('click', () => {
         function getOrthographicForm(wordEntry, forDisplay = true, useFirstGraphemeForAutoInflection = false) {
             if (!wordEntry) return "";
             // If a custom orthography is defined for the word, always use it.
-            if (wordEntry.customOrthography && typeof wordEntry.customOrthography === 'string' && wordEntry.customOrthography.trim() !== '') {
+            if (wordEntry.customOrthography) {
                 return wordEntry.customOrthography;
             }
             // Otherwise, transliterate the base phonemic form.
@@ -2176,7 +2179,7 @@ deleteLangButton.addEventListener('click', () => {
                 const toneRepresentationsSorted = definedTones
                     .map(t => ({rep: t.representation, tone: t}))
                     .filter(item => item.rep && typeof item.rep === 'string') 
-                    .sort((a,b) => b.rep.length - a.rep.length); 
+                    .sort((a,b) => b.rep.length - a.b.rep.length); 
 
                  for (const item of toneRepresentationsSorted) {
                     if (item.rep && baseWord.endsWith(item.rep)) { 
@@ -3179,35 +3182,39 @@ deleteLangButton.addEventListener('click', () => {
         };
 
         // This function applies a single step of a rule
-        function applyRuleStep(currentWord, stepRuleType, stepRuleValue) {
+        // NEW: isPhoneticOperation flag
+        function applyRuleStep(currentWord, stepRuleType, stepRuleValue, isPhoneticOperation = false) {
             let inflectedWord = currentWord;
+            const langVowels = isPhoneticOperation ? (currentLanguage.phonology.vowels || []) : null; // Only used for phonetic conditional suffix
+
             switch (stepRuleType) {
                 case 'prefix': inflectedWord = stepRuleValue + currentWord; break;
                 case 'suffix': inflectedWord = currentWord + stepRuleValue; break;
                 case 'infix':
-                    if (stepRuleValue.includes('>')) {
+                    if (typeof stepRuleValue === 'string' && stepRuleValue.includes('>')) {
                         const parts = stepRuleValue.split('>');
                         const charToFind = parts[0]; const charToInsert = parts[1];
                         const idx = currentWord.lastIndexOf(charToFind);
                         if (idx !== -1) inflectedWord = currentWord.slice(0, idx + charToFind.length) + charToInsert + currentWord.slice(idx + charToFind.length);
-                        else { // Fallback if charToFind is not present
+                        else { 
                            const mid = Math.floor(currentWord.length / 2);
                            inflectedWord = currentWord.slice(0, mid) + stepRuleValue.replace(charToFind + ">", "") + currentWord.slice(mid);
                         }
-                    } else { // Simple infix in the middle
+                    } else { 
                         const mid = Math.floor(currentWord.length / 2);
-                        inflectedWord = currentWord.slice(0, mid) + stepRuleValue + currentWord.slice(mid);
+                        inflectedWord = currentWord.slice(0, mid) + String(stepRuleValue) + currentWord.slice(mid);
                     }
                     break;
                 case 'ablaut':
                     let tempWord = currentWord;
-                    const changes = stepRuleValue.split(',').map(s => s.trim());
+                    const changes = String(stepRuleValue).split(',').map(s => s.trim());
                     changes.forEach(change => {
                         if (change.includes('>')) {
                             const parts = change.split('>');
-                            const fromVowel = parts[0].trim(); const toVowel = parts[1].trim();
-                            const escapedFromVowel = fromVowel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                            try { tempWord = tempWord.replace(new RegExp(escapedFromVowel, 'g'), toVowel); }
+                            const fromSound = parts[0].trim(); const toSound = parts[1].trim();
+                            // Escape for regex, important for both phonetic and orthographic operations
+                            const escapedFromSound = fromSound.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                            try { tempWord = tempWord.replace(new RegExp(escapedFromSound, 'g'), toSound); }
                             catch (e) { console.error("Error in ablaut regex:", e); }
                         }
                     });
@@ -3218,37 +3225,42 @@ deleteLangButton.addEventListener('click', () => {
                     if (typeof stepRuleValue === 'string' && stepRuleValue.includes('>')) {
                         const parts = stepRuleValue.split('>');
                         if (parts.length === 3) {
-                            const condVowelSpec = parts[0].trim();    // e.g., "*", "a", "i,e"
-                            const epentheticSound = parts[1].trim(); // The "......" part, e.g., "n"
-                            const finalSuffix = parts[2].trim();     // The main suffix, e.g., "ita"
+                            const condEndingSpec = parts[0].trim();  // e.g., "*", "a", "i,e" (ortho) or specific phonemes
+                            const epentheticSound = parts[1].trim(); 
+                            const finalSuffix = parts[2].trim();     
 
-                            let wordEndsWithQualifyingVowel = false;
-                            const languageVowels = currentLanguage.phonology.vowels || [];
-
-                            if (condVowelSpec === '*') { // Any vowel from the language's vowel inventory
-                                wordEndsWithQualifyingVowel = languageVowels.some(v => currentWord.endsWith(v));
-                            } else { // Specific vowel(s) listed in condVowelSpec
-                                const specifiedConditionVowels = condVowelSpec.split(',').map(v => v.trim()).filter(Boolean);
-                                wordEndsWithQualifyingVowel = specifiedConditionVowels.some(vCond => 
-                                    currentWord.endsWith(vCond) && languageVowels.includes(vCond)
-                                );
+                            let wordEndsWithQualifyingElement = false;
+                            if (isPhoneticOperation && langVowels) { // Phonetic check
+                                if (condEndingSpec === '*') {
+                                     wordEndsWithQualifyingElement = langVowels.some(v => currentWord.endsWith(v));
+                                } else {
+                                    const specifiedConditionElements = condEndingSpec.split(',').map(v => v.trim()).filter(Boolean);
+                                    wordEndsWithQualifyingElement = specifiedConditionElements.some(vCond => 
+                                        currentWord.endsWith(vCond) && langVowels.includes(vCond)
+                                    );
+                                }
+                            } else { // Orthographic check (default)
+                                 if (condEndingSpec === '*') { // Any vowel char if not phonetic op, or any phonology vowel if it is
+                                    const checkChars = isPhoneticOperation && langVowels ? langVowels : ['a','e','i','o','u','A','E','I','O','U']; // Simple vowel chars for ortho
+                                    wordEndsWithQualifyingElement = checkChars.some(v => currentWord.endsWith(v));
+                                } else {
+                                    const specifiedConditionElements = condEndingSpec.split(',').map(v => v.trim()).filter(Boolean);
+                                    wordEndsWithQualifyingElement = specifiedConditionElements.some(vCond => currentWord.endsWith(vCond));
+                                }
                             }
 
-                            if (wordEndsWithQualifyingVowel) {
+                            if (wordEndsWithQualifyingElement) {
                                 inflectedWord = currentWord + epentheticSound + finalSuffix;
                             } else {
-                                // Word ends in a consonant, or a vowel not matching the specific condition
-                                inflectedWord = currentWord + finalSuffix; // Apply final suffix directly
+                                inflectedWord = currentWord + finalSuffix; 
                             }
                         } else {
-                            console.warn("Conditional suffix ruleValue format error:", stepRuleValue, "Expected 3 parts separated by '>'. Applying last part as suffix.");
-                            inflectedWord = currentWord + (parts[parts.length-1] || ''); // Fallback
+                            console.warn("Conditional suffix ruleValue format error:", stepRuleValue);
+                            inflectedWord = currentWord + (parts[parts.length-1] || '');
                         }
                     } else {
-                         console.warn("Conditional suffix ruleValue is not a string or malformed:", stepRuleValue, "Attempting direct suffixation if string.");
-                         if (typeof stepRuleValue === 'string') { // If it's just a string, treat as simple suffix
-                            inflectedWord = currentWord + stepRuleValue;
-                         }
+                         console.warn("Conditional suffix ruleValue is not a string or malformed:", stepRuleValue);
+                         if (typeof stepRuleValue === 'string') { inflectedWord = currentWord + stepRuleValue; }
                     }
                     break;
                 case 'none': default: break; 
@@ -3256,16 +3268,17 @@ deleteLangButton.addEventListener('click', () => {
             return inflectedWord;
         }
 
-        function applyInflectionRuleDefinition(baseWord, ruleDefinition) {
+        // NEW: isPhoneticOperation flag
+        function applyInflectionRuleDefinition(baseForm, ruleDefinition, isPhoneticOperation = false) {
             if (!ruleDefinition || !ruleDefinition.ruleSteps || ruleDefinition.ruleSteps.length === 0) {
-                return baseWord;
+                return baseForm;
             }
-            let currentWordState = baseWord;
+            let currentWordState = baseForm;
             const sortedSteps = [...ruleDefinition.ruleSteps].sort((a,b) => a.order - b.order);
 
             for (const step of sortedSteps) {
-                const valueToUse = step.ruleValue !== undefined ? step.ruleValue : step.value;
-                currentWordState = applyRuleStep(currentWordState, step.ruleType, valueToUse);
+                const valueToUse = step.ruleValue !== undefined ? step.ruleValue : step.value; // Accommodate nounPluralization
+                currentWordState = applyRuleStep(currentWordState, step.ruleType, valueToUse, isPhoneticOperation);
             }
             return currentWordState;
         }
@@ -3329,6 +3342,8 @@ deleteLangButton.addEventListener('click', () => {
             if (!wordEntry) return '<p>Error: Word not found.</p>';
 
             const wordPOS = wordEntry.partOfSpeech;
+            // UPDATED: Column for inflected phonetic form is now optional based on user feedback
+            // For now, it's kept, but its derivation is parallel to orthographic.
             let tableContent = `<table class="min-w-full divide-y divide-gray-200 table-sm mt-2">
                                 <thead class="bg-gray-50"><tr>
                                     <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">ประเภท</th>
@@ -3352,13 +3367,13 @@ deleteLangButton.addEventListener('click', () => {
                     const manualInflectionKey = `${cat.id}_${option.replace(/\s+/g, '_')}`; 
                     const manualInflection = wordEntry.manualInflections ? wordEntry.manualInflections[manualInflectionKey] : null;
                     
-                    let inflectedPhoneticForm = wordEntry.word; 
-                    let finalOrthographicForm;
+                    let inflectedOrthographicForm;
+                    let inflectedPhoneticForm;
                     let isManual = false;
 
-                    if (manualInflection && (manualInflection.phonetic || manualInflection.orthographic) ) { 
-                        inflectedPhoneticForm = manualInflection.phonetic || autoFormatDetailedPhonetics(transliterateWordToSymbols(manualInflection.orthographic, false, true), currentLanguage.phonology); //
-                        finalOrthographicForm = manualInflection.orthographic || getOrthographicForm({word: inflectedPhoneticForm, customOrthography: null}, true, true);
+                    if (manualInflection && (manualInflection.orthographic || manualInflection.phonetic)) { 
+                        inflectedOrthographicForm = manualInflection.orthographic || getOrthographicForm({word: manualInflection.phonetic, customOrthography: null}, true, true);
+                        inflectedPhoneticForm = manualInflection.phonetic || wordEntry.word; // Fallback to base phonemic if only ortho override
                         isManual = true;
                     } else {
                         const rule = currentLanguage.grammar.morphology.conjugationRules.find(r =>
@@ -3366,34 +3381,16 @@ deleteLangButton.addEventListener('click', () => {
                             r.categoryId === cat.id && r.categoryOption === option
                         );
                         if (rule) {
-                            inflectedPhoneticForm = applyInflectionRuleDefinition(wordEntry.word, rule);
+                            // Orthographic inflection
+                            const baseOrtho = getOrthographicForm(wordEntry, true, true); // Use first grapheme rule for consistent base
+                            inflectedOrthographicForm = applyInflectionRuleDefinition(baseOrtho, rule, false); // isPhoneticOperation = false
                             
-                            // Logic for orthographic form based on user request
-                            const isSimpleAffixRule = rule.ruleSteps && rule.ruleSteps.length === 1 && 
-                                                      (rule.ruleSteps[0].ruleType === 'suffix' || rule.ruleSteps[0].ruleType === 'prefix');
-                            const isSuppletionRule = rule.ruleSteps && rule.ruleSteps.length === 1 && rule.ruleSteps[0].ruleType === 'suppletion';
-
-                            if (wordEntry.customOrthography && isSimpleAffixRule) {
-                                const baseOrtho = wordEntry.customOrthography;
-                                const affixPhonemic = rule.ruleSteps[0].ruleValue;
-                                const affixOrtho = transliterateWordToSymbols(affixPhonemic, true, true);
-                                if (rule.ruleSteps[0].ruleType === 'suffix') {
-                                    finalOrthographicForm = baseOrtho + affixOrtho;
-                                } else { // prefix
-                                    finalOrthographicForm = affixOrtho + baseOrtho;
-                                }
-                            } else if (isSuppletionRule) {
-                                const newPhonemicFormSuppletion = rule.ruleSteps[0].ruleValue;
-                                finalOrthographicForm = getOrthographicForm({word: newPhonemicFormSuppletion, customOrthography: null}, true, true);
-                                inflectedPhoneticForm = newPhonemicFormSuppletion; // Ensure phonetic form is updated for suppletion
-                            } else {
-                                // No custom orthography, or complex rule (ablaut, infix, multi-step, conditional)
-                                finalOrthographicForm = getOrthographicForm({word: inflectedPhoneticForm, customOrthography: null}, true, true);
-                            }
+                            // Phonetic inflection (parallel derivation)
+                            inflectedPhoneticForm = applyInflectionRuleDefinition(wordEntry.word, rule, true); // isPhoneticOperation = true
                         } else {
                             // No rule, no manual override: show base form
-                            inflectedPhoneticForm = wordEntry.word; // Keep base phonemic
-                            finalOrthographicForm = getOrthographicForm(wordEntry, true, true); // Get base orthographic
+                            inflectedOrthographicForm = getOrthographicForm(wordEntry, true, true);
+                            inflectedPhoneticForm = wordEntry.word;
                         }
                     }
                     
@@ -3402,7 +3399,7 @@ deleteLangButton.addEventListener('click', () => {
                     tableContent += `<tr class="${categoryBgClass}">
                                     <td class="px-2 py-1">${optIndex === 0 ? cat.name : ''}</td>
                                     <td class="px-2 py-1">${option} ${isManual ? '<em class="text-xs text-blue-500">(manual)</em>' : ''}</td>
-                                    <td class="px-2 py-1 font-mono">${finalOrthographicForm}</td>
+                                    <td class="px-2 py-1 font-mono">${inflectedOrthographicForm}</td>
                                     <td class="px-2 py-1 font-mono text-gray-600">${formattedPhoneticDisplay}</td>
                                    </tr>`;
                 });
@@ -3423,7 +3420,8 @@ deleteLangButton.addEventListener('click', () => {
             word.manualInflections = word.manualInflections || {}; 
 
             const wordPOS = word.partOfSpeech;
-            let content = `<p class="text-sm mb-2">คำฐาน (เสียง): <strong class="font-mono">${word.word}</strong> | คำฐาน (อักขรวิธี): <strong class="font-mono">${getOrthographicForm(word)}</strong></p>`;
+            let content = `<p class="text-sm mb-2">คำฐาน (อักขรวิธี): <strong class="font-mono">${getOrthographicForm(word, true, true)}</strong></p>`;
+            // Removed base phonetic display from this modal intro per user feedback on its importance.
             
             content += `<div class="my-2"><strong>แสดงเฉพาะประเภท:</strong> <select id="conjModalCategoryFilter" multiple class="w-full p-1 border rounded text-sm h-20">`;
             currentLanguage.grammar.morphology.conjugationCategories.forEach(cat => {
@@ -3473,7 +3471,7 @@ deleteLangButton.addEventListener('click', () => {
                                     <th class="px-2 py-1 text-left text-xs font-medium text-gray-600 uppercase">ตัวเลือกย่อย</th>
                                     <th class="px-2 py-1 text-left text-xs font-medium text-gray-600 uppercase">Override</th>
                                     <th class="px-2 py-1 text-left text-xs font-medium text-gray-600 uppercase">รูปผัน (อักขรวิธี)</th>
-                                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-600 uppercase">รูปผัน (เสียง)</th>
+                                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-600 uppercase">รูปผัน (เสียง) - ถ้าต่าง</th>
                                 </tr></thead><tbody class="bg-white divide-y divide-gray-200">`;
             
             let foundApplicableCategory = false;
@@ -3491,41 +3489,20 @@ deleteLangButton.addEventListener('click', () => {
                     const manualInflectionKey = `${cat.id}_${option.replace(/\s+/g, '_')}`;
                     const currentManualOverride = word.manualInflections[manualInflectionKey];
                     
-                    let ruleBasedPhonetic = word.word; 
-                    let ruleBasedOrthographic = getOrthographicForm(word, true, true); // Default to base word's orthography
-
                     const rule = currentLanguage.grammar.morphology.conjugationRules.find(r =>
                         (r.partOfSpeech === wordPOS || wordPOS.startsWith(r.partOfSpeech+":")) && 
                         r.categoryId === cat.id && r.categoryOption === option
                     );
 
-                    if (rule) {
-                        ruleBasedPhonetic = applyInflectionRuleDefinition(word.word, rule);
-                        
-                        const isSimpleAffixRule = rule.ruleSteps && rule.ruleSteps.length === 1 && 
-                                                  (rule.ruleSteps[0].ruleType === 'suffix' || rule.ruleSteps[0].ruleType === 'prefix');
-                        const isSuppletionRule = rule.ruleSteps && rule.ruleSteps.length === 1 && rule.ruleSteps[0].ruleType === 'suppletion';
-
-                        if (word.customOrthography && isSimpleAffixRule) {
-                            const baseOrtho = word.customOrthography;
-                            const affixPhonemic = rule.ruleSteps[0].ruleValue;
-                            const affixOrtho = transliterateWordToSymbols(affixPhonemic, true, true);
-                            if (rule.ruleSteps[0].ruleType === 'suffix') {
-                                ruleBasedOrthographic = baseOrtho + affixOrtho;
-                            } else { // prefix
-                                ruleBasedOrthographic = affixOrtho + baseOrtho;
-                            }
-                        } else if (isSuppletionRule) {
-                             const newPhonemicFormSuppletion = rule.ruleSteps[0].ruleValue;
-                             ruleBasedOrthographic = getOrthographicForm({word: newPhonemicFormSuppletion, customOrthography: null}, true, true);
-                             // ruleBasedPhonetic is already correctly set from applyInflectionRuleDefinition
-                        } else {
-                            ruleBasedOrthographic = getOrthographicForm({word: ruleBasedPhonetic, customOrthography: null}, true, true);
-                        }
-                    }
-                    // If no rule, ruleBasedPhonetic and ruleBasedOrthographic remain as the base word forms.
+                    // Rule-based orthographic form
+                    const baseOrthoForRule = getOrthographicForm(word, true, true);
+                    const ruleBasedOrthographic = rule ? applyInflectionRuleDefinition(baseOrthoForRule, rule, false) : baseOrthoForRule;
                     
-                   const initialOrthoValue = currentManualOverride?.orthographic || ruleBasedOrthographic;
+                    // Rule-based phonetic form
+                    const basePhonemicForRule = word.word;
+                    const ruleBasedPhonetic = rule ? applyInflectionRuleDefinition(basePhonemicForRule, rule, true) : basePhonemicForRule;
+                    
+                    const initialOrthoValue = currentManualOverride?.orthographic || ruleBasedOrthographic;
                     const initialPhoneticValue = currentManualOverride?.phonetic || ruleBasedPhonetic; 
                     const displayPhoneticFormatted = autoFormatDetailedPhonetics(initialPhoneticValue, currentLanguage.phonology); 
 
@@ -3544,7 +3521,7 @@ deleteLangButton.addEventListener('click', () => {
                                     <td class="px-2 py-1">
                                          <input type="text" class="w-full p-0.5 border rounded text-xs font-mono manual-phonetic-input" data-key="${manualInflectionKey}" 
                                                value="${initialPhoneticValue}" ${!currentManualOverride ? 'disabled' : ''} 
-                                               placeholder="รูปเสียง (ดิบ)" oninput="updateFormattedPhoneticDisplay(this, '${manualInflectionKey}')">
+                                               placeholder="รูปเสียง (ถ้าต่างจากรูปเขียน)" oninput="updateFormattedPhoneticDisplay(this, '${manualInflectionKey}')">
                                          <span class="text-xs text-gray-500 manual-phonetic-display" data-key="${manualInflectionKey}">${displayPhoneticFormatted}</span>
                                     </td>
                                </tr>`;
@@ -3652,6 +3629,7 @@ deleteLangButton.addEventListener('click', () => {
                 <div class="flex flex-wrap gap-2 mb-4 items-center">
                     <button id="exportJsonBtnDict" class="btn-secondary bg-amber-400 hover:bg-amber-500 px-3 py-1 rounded-md text-sm"><i class="fas fa-file-export mr-1"></i>Export JSON</button>
                     <button id="exportCsvBtnDict" class="btn-secondary bg-amber-400 hover:bg-amber-500 px-3 py-1 rounded-md text-sm"><i class="fas fa-file-csv mr-1"></i>Export CSV</button>
+                    <button id="exportXlsxBtnDict" class="btn-secondary bg-green-400 hover:bg-green-500 px-3 py-1 rounded-md text-sm"><i class="fas fa-file-excel mr-1"></i>Export XLSX</button>
                     <button id="showAddWordModalBtnDict" class="btn-primary bg-yellow-500 hover:bg-yellow-600 py-2 px-4 rounded-md ml-auto"><i class="fas fa-plus mr-1"></i>เพิ่มคำศัพท์ใหม่</button>
                 </div>
                 <div id="dictionaryTableContainer" class="overflow-x-auto">
@@ -3726,6 +3704,7 @@ deleteLangButton.addEventListener('click', () => {
 
             document.getElementById('exportJsonBtnDict').addEventListener('click', exportDictionaryAsJSON);
             document.getElementById('exportCsvBtnDict').addEventListener('click', exportDictionaryAsCSV);
+            document.getElementById('exportXlsxBtnDict').addEventListener('click', exportDictionaryAsXLSX); // Added
             document.getElementById('showAddWordModalBtnDict').addEventListener('click', () => showWordModal());
 
             renderDictionaryTable(currentLanguage.lexicon.slice(0,50)); 
@@ -3865,7 +3844,7 @@ deleteLangButton.addEventListener('click', () => {
         
             const hasDialectForms = word.dialectalForms && word.dialectalForms.length > 0;
 
-            wordDetailContent.innerHTML = contentHtml || '<p class="text-gray-500">ไม่มีรายละเอียดเพิ่มเติม</p>';
+                wordDetailContent.innerHTML = contentHtml || '<p class="text-gray-500">ไม่มีรายละเอียดเพิ่มเติม</p>';
         
             wordDetailButtons.innerHTML = `
                 <button class="btn-secondary text-xs" onclick="openEtymologyTreeForWord(${word.id})"><i class="fas fa-seedling mr-1"></i> ดูผังศัพทมูลวิทยา</button>
