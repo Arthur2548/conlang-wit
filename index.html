@@ -220,8 +220,9 @@
                     </div>
                     <button id="addNewLangButton" class="btn-secondary py-2 px-3 rounded-md font-semibold text-sm whitespace-nowrap"><i class="fas fa-plus-circle mr-1"></i> สร้างภาษาใหม่</button>
                     <button id="deleteLangButton" class="btn-secondary py-2 px-3 rounded-md font-semibold text-sm whitespace-nowrap">
-    <i class="fas fa-trash-alt mr-1"></i> ลบภาษา
-</button>
+                        <i class="fas fa-trash-alt mr-1"></i> ลบภาษา
+                    </button>
+                    <a href="https://arthur2548.github.io/ipaConlang/" target="_blank" id="ipaConverterToolButton" class="btn-secondary py-2 px-3 rounded-md font-semibold text-sm hidden sm:inline-block whitespace-nowrap"><i class="fas fa-language mr-1"></i> แปลงสัทอักษร IPA</a>
                     <button id="aboutButton" class="btn-secondary py-2 px-3 rounded-md font-semibold text-sm hidden sm:inline-block">📜 เกี่ยวกับ</button>
                 </div>
             </div>
@@ -2144,7 +2145,7 @@ deleteLangButton.addEventListener('click', () => {
         function getOrthographicForm(wordEntry, forDisplay = true, useFirstGraphemeForAutoInflection = false) {
             if (!wordEntry) return "";
             // If a custom orthography is defined for the word, always use it.
-            if (wordEntry.customOrthography) {
+            if (wordEntry.customOrthography && typeof wordEntry.customOrthography === 'string' && wordEntry.customOrthography.trim() !== '') {
                 return wordEntry.customOrthography;
             }
             // Otherwise, transliterate the base phonemic form.
@@ -3352,28 +3353,47 @@ deleteLangButton.addEventListener('click', () => {
                     const manualInflection = wordEntry.manualInflections ? wordEntry.manualInflections[manualInflectionKey] : null;
                     
                     let inflectedPhoneticForm = wordEntry.word; 
-                    let inflectedOrthographicForm; // Will be determined below
+                    let finalOrthographicForm;
                     let isManual = false;
 
-                    if (manualInflection && manualInflection.phonetic) { 
-                        inflectedPhoneticForm = manualInflection.phonetic;
-                        // For manual overrides, customOrthography field of the manualInflection should be used if present.
-                        // If not, transliterate the manual phonetic form (using first grapheme rule).
-                        inflectedOrthographicForm = manualInflection.orthographic || getOrthographicForm({word: inflectedPhoneticForm, customOrthography: null}, true, true);
+                    if (manualInflection && (manualInflection.phonetic || manualInflection.orthographic) ) { 
+                        inflectedPhoneticForm = manualInflection.phonetic || autoFormatDetailedPhonetics(transliterateWordToSymbols(manualInflection.orthographic, false, true), currentLanguage.phonology); //
+                        finalOrthographicForm = manualInflection.orthographic || getOrthographicForm({word: inflectedPhoneticForm, customOrthography: null}, true, true);
                         isManual = true;
                     } else {
                         const rule = currentLanguage.grammar.morphology.conjugationRules.find(r =>
                             (r.partOfSpeech === wordPOS || wordPOS.startsWith(r.partOfSpeech + ":")) && 
                             r.categoryId === cat.id && r.categoryOption === option
                         );
-                        if (rule) { // Rule itself contains ruleSteps
-                            inflectedPhoneticForm = applyInflectionRuleDefinition(wordEntry.word, rule); // Use the new function
-                            // For rule-generated forms, use the first grapheme rule for consistency.
-                            inflectedOrthographicForm = getOrthographicForm({word: inflectedPhoneticForm, customOrthography: null}, true, true);
+                        if (rule) {
+                            inflectedPhoneticForm = applyInflectionRuleDefinition(wordEntry.word, rule);
+                            
+                            // Logic for orthographic form based on user request
+                            const isSimpleAffixRule = rule.ruleSteps && rule.ruleSteps.length === 1 && 
+                                                      (rule.ruleSteps[0].ruleType === 'suffix' || rule.ruleSteps[0].ruleType === 'prefix');
+                            const isSuppletionRule = rule.ruleSteps && rule.ruleSteps.length === 1 && rule.ruleSteps[0].ruleType === 'suppletion';
+
+                            if (wordEntry.customOrthography && isSimpleAffixRule) {
+                                const baseOrtho = wordEntry.customOrthography;
+                                const affixPhonemic = rule.ruleSteps[0].ruleValue;
+                                const affixOrtho = transliterateWordToSymbols(affixPhonemic, true, true);
+                                if (rule.ruleSteps[0].ruleType === 'suffix') {
+                                    finalOrthographicForm = baseOrtho + affixOrtho;
+                                } else { // prefix
+                                    finalOrthographicForm = affixOrtho + baseOrtho;
+                                }
+                            } else if (isSuppletionRule) {
+                                const newPhonemicFormSuppletion = rule.ruleSteps[0].ruleValue;
+                                finalOrthographicForm = getOrthographicForm({word: newPhonemicFormSuppletion, customOrthography: null}, true, true);
+                                inflectedPhoneticForm = newPhonemicFormSuppletion; // Ensure phonetic form is updated for suppletion
+                            } else {
+                                // No custom orthography, or complex rule (ablaut, infix, multi-step, conditional)
+                                finalOrthographicForm = getOrthographicForm({word: inflectedPhoneticForm, customOrthography: null}, true, true);
+                            }
                         } else {
-                            // No rule, no manual override: show base form, transliterated with first grapheme rule.
-                            inflectedPhoneticForm = wordEntry.word;
-                            inflectedOrthographicForm = getOrthographicForm({word: wordEntry.word, customOrthography: null}, true, true);
+                            // No rule, no manual override: show base form
+                            inflectedPhoneticForm = wordEntry.word; // Keep base phonemic
+                            finalOrthographicForm = getOrthographicForm(wordEntry, true, true); // Get base orthographic
                         }
                     }
                     
@@ -3382,7 +3402,7 @@ deleteLangButton.addEventListener('click', () => {
                     tableContent += `<tr class="${categoryBgClass}">
                                     <td class="px-2 py-1">${optIndex === 0 ? cat.name : ''}</td>
                                     <td class="px-2 py-1">${option} ${isManual ? '<em class="text-xs text-blue-500">(manual)</em>' : ''}</td>
-                                    <td class="px-2 py-1 font-mono">${inflectedOrthographicForm}</td>
+                                    <td class="px-2 py-1 font-mono">${finalOrthographicForm}</td>
                                     <td class="px-2 py-1 font-mono text-gray-600">${formattedPhoneticDisplay}</td>
                                    </tr>`;
                 });
@@ -3472,16 +3492,40 @@ deleteLangButton.addEventListener('click', () => {
                     const currentManualOverride = word.manualInflections[manualInflectionKey];
                     
                     let ruleBasedPhonetic = word.word; 
+                    let ruleBasedOrthographic = getOrthographicForm(word, true, true); // Default to base word's orthography
+
                     const rule = currentLanguage.grammar.morphology.conjugationRules.find(r =>
                         (r.partOfSpeech === wordPOS || wordPOS.startsWith(r.partOfSpeech+":")) && 
                         r.categoryId === cat.id && r.categoryOption === option
                     );
-                    if (rule) ruleBasedPhonetic = applyInflectionRuleDefinition(word.word, rule);
+
+                    if (rule) {
+                        ruleBasedPhonetic = applyInflectionRuleDefinition(word.word, rule);
+                        
+                        const isSimpleAffixRule = rule.ruleSteps && rule.ruleSteps.length === 1 && 
+                                                  (rule.ruleSteps[0].ruleType === 'suffix' || rule.ruleSteps[0].ruleType === 'prefix');
+                        const isSuppletionRule = rule.ruleSteps && rule.ruleSteps.length === 1 && rule.ruleSteps[0].ruleType === 'suppletion';
+
+                        if (word.customOrthography && isSimpleAffixRule) {
+                            const baseOrtho = word.customOrthography;
+                            const affixPhonemic = rule.ruleSteps[0].ruleValue;
+                            const affixOrtho = transliterateWordToSymbols(affixPhonemic, true, true);
+                            if (rule.ruleSteps[0].ruleType === 'suffix') {
+                                ruleBasedOrthographic = baseOrtho + affixOrtho;
+                            } else { // prefix
+                                ruleBasedOrthographic = affixOrtho + baseOrtho;
+                            }
+                        } else if (isSuppletionRule) {
+                             const newPhonemicFormSuppletion = rule.ruleSteps[0].ruleValue;
+                             ruleBasedOrthographic = getOrthographicForm({word: newPhonemicFormSuppletion, customOrthography: null}, true, true);
+                             // ruleBasedPhonetic is already correctly set from applyInflectionRuleDefinition
+                        } else {
+                            ruleBasedOrthographic = getOrthographicForm({word: ruleBasedPhonetic, customOrthography: null}, true, true);
+                        }
+                    }
+                    // If no rule, ruleBasedPhonetic and ruleBasedOrthographic remain as the base word forms.
                     
-                    // Rule-based orthographic form using the first grapheme rule for consistency.
-                    const ruleBasedOrthographic = getOrthographicForm({word: ruleBasedPhonetic, customOrthography: null}, true, true);
-                    
-                    const initialOrthoValue = currentManualOverride?.orthographic || ruleBasedOrthographic;
+                   const initialOrthoValue = currentManualOverride?.orthographic || ruleBasedOrthographic;
                     const initialPhoneticValue = currentManualOverride?.phonetic || ruleBasedPhonetic; 
                     const displayPhoneticFormatted = autoFormatDetailedPhonetics(initialPhoneticValue, currentLanguage.phonology); 
 
