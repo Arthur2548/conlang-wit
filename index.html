@@ -150,7 +150,7 @@
             <button id="closeLanguageNameModalBtn" class="absolute top-3 right-4 text-2xl text-purple-500 hover:text-purple-700">&times;</button>
             <h2 class="text-2xl font-bold mb-4 text-center">👋 ยินดีต้อนรับสู่โปรแกรมประดิษฐภาษา!</h2>
             <p class="mb-4 text-center">กรุณาตั้งชื่อภาษาของคุณก่อนเริ่มใช้งาน:</p>
-            <input type="text" id="languageNameInput" class="w-full p-2 border border-purple-300 rounded-md mb-4 focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="เช่น 'เอลฟิช', 'มังกรลิ้น'">
+            <input type="text" id="languageNameInput" class="w-full p-2 border border-purple-300 rounded-md mb-4 focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="เช่น 'พาร์เซล', 'วิทยภาษา'">
             <button id="submitLanguageName" class="w-full btn-primary py-2 px-4 rounded-md font-semibold">เริ่มสร้างภาษา ✨</button>
         </div>
     </div>
@@ -167,6 +167,8 @@
             </ul>
             <h3 class="text-xl font-semibold mb-2">อาจารย์ที่ปรึกษานวัตกรรม</h3>
             <p class="mb-6">อาจารย์ ดร. พรทิพย์ ครามจันทึก</p>
+             <h3 class="text-xl font-semibold mb-2">ครูพี่เลี้ยง</h3>
+              <p class="mb-6">ครูดวงเดือน กิติประสาท</p>
              <h4 class="text-xl font-semibold mb-2">อยู่ระหว่างการพัฒนาระบบ ระบบอาจมีการหน่วงหรือช้าบ้าง ก็ขออภัยมา ณ ที่นี้ด้วย</h4>
              <p class="mb-6">แนะนำให้ผู้ใช้งานเลือกใช้ browser จาก microsoft edge หรือ Google chrome เพื่อระบบที่เสถียร</p>
             <p class="mb-6">แนะนำให้ผู้ใช้งานใช้คอมพิวเตอร์หรือแล็ปท็อป ในการใช้งานระบบ</p>
@@ -220,9 +222,8 @@
                     </div>
                     <button id="addNewLangButton" class="btn-secondary py-2 px-3 rounded-md font-semibold text-sm whitespace-nowrap"><i class="fas fa-plus-circle mr-1"></i> สร้างภาษาใหม่</button>
                     <button id="deleteLangButton" class="btn-secondary py-2 px-3 rounded-md font-semibold text-sm whitespace-nowrap">
-                        <i class="fas fa-trash-alt mr-1"></i> ลบภาษา
-                    </button>
-                    <a href="https://arthur2548.github.io/ipaConlang/" target="_blank" id="ipaConverterToolButton" class="btn-secondary py-2 px-3 rounded-md font-semibold text-sm hidden sm:inline-block whitespace-nowrap"><i class="fas fa-language mr-1"></i> แปลงสัทอักษร IPA</a>
+    <i class="fas fa-trash-alt mr-1"></i> ลบภาษา
+</button>
                     <button id="aboutButton" class="btn-secondary py-2 px-3 rounded-md font-semibold text-sm hidden sm:inline-block">📜 เกี่ยวกับ</button>
                 </div>
             </div>
@@ -283,7 +284,7 @@
                 
                 activeSoundChanges: [], 
 
-                syllableStructures: ['CV', 'CVC', 'CCV', 'CCVC'],
+                syllableStructures: ['CV', 'CVC', 'VC'],
                 phonotactics: [ 
                     { rule: "ห้ามพยัญชนะซ้อนภายในโครงสร้างพยางค์หลัก (เช่น CVC ห้ามเป็น CCVC)", type: "no_internal_cluster_in_base_syllable", enabled: true, custom: false, pattern: "" },
                 ]
@@ -316,15 +317,15 @@
                 baseEra: null, 
                 wordEra: null, 
                 eras: [ 
-                    { id: 'era_proto', name: 'Proto-Language', order: 0, soundChangeRules: [] }, 
-                    { id: 'era_old', name: 'Old Period', order: 1, soundChangeRules: [] },
-                    { id: 'era_modern', name: 'Modern Period', order: 2, soundChangeRules: [] }
+                    { id: 'era_proto', name: 'ยุคโบราณ', order: 0, soundChangeRules: [] }, 
+                    { id: 'era_old', name: 'คำฐาน', order: 1, soundChangeRules: [] },
+                    { id: 'era_modern', name: 'ยุคใหม่', order: 2, soundChangeRules: [] }
                 ]
             },
             eras: [ 
-                { id: 'era_proto', name: 'Proto-Language', order: 0, soundChangeRules: [] }, 
-                { id: 'era_old', name: 'Old Period', order: 1, soundChangeRules: [] },
-                { id: 'era_modern', name: 'Modern Period', order: 2, soundChangeRules: [] }
+                { id: 'era_proto', name: 'ยุคโบราณ', order: 0, soundChangeRules: [] }, 
+                { id: 'era_old', name: 'คำฐาน', order: 1, soundChangeRules: [] },
+                { id: 'era_modern', name: 'ยุคใหม่', order: 2, soundChangeRules: [] }
             ],
             regions: ['(M) มาตรฐาน', '(N) ถิ่นเหนือ', '(S) ถิ่นใต้', '(E) ถิ่นตะวันออก', '(W) ถิ่นตะวันตก'], 
             dialectSoundChanges: {}, 
@@ -404,7 +405,7 @@
             { id: 'dictionary', name: '📚 พจนานุกรม', icon: 'fas fa-atlas', contentFunc: renderDictionaryUI, menu: true },
             { id: 'orthography', name: '🔤 ระบบอักษร', icon: 'fas fa-spell-check', contentFunc: renderOrthographyUI, menu: true },
             { id: 'etymology', name: '🌱 ศัพทมูลวิทยา', icon: 'fas fa-seedling', contentFunc: renderEtymologyUI, menu: true },
-            { id: 'evolution', name: '⏳ วิวัฒนาการคำ', icon: 'fas fa-history', contentFunc: renderEvolutionUI, menu: true },
+            { id: 'evolution', name: '⏳ วิวัฒนาการคำ', icon: 'fas fa-history', contentFunc: (container) => { renderEvolutionUI(container); }, menu: true },
             { id: 'dialects', name: '🗺️ ภาษาถิ่น', icon: 'fas fa-map-signs', contentFunc: renderDialectsUI, menu: true },
             { id: 'langFamily', name: '🌳 ตระกูลภาษา', icon: 'fas fa-sitemap', contentFunc: renderLangFamilyUI, menu: true },
             { id: 'soundChanges', name: '🔄 กฎการเปลี่ยนเสียง (ระหว่างภาษา)', icon: 'fas fa-exchange-alt', contentFunc: renderSoundChangesInterLangUI, menu: true },
@@ -441,16 +442,18 @@
         window.onload = async () => {
             await fetchThaiMeaningsFromAPI();
             loadData(); 
+            // เงื่อนไขใหม่: ถ้าไม่มีภาษาเลย (allLanguages.length === 0) และ currentLanguage ไม่มีชื่อ ให้แสดง modal
             if (!currentLanguage.name && allLanguages.length === 0) {
                 languageNameModal.classList.remove('hidden');
                 mainContent.classList.add('disabled-section');
-            } else if (!currentLanguage.name && allLanguages.length > 0) {
-                switchLanguage(allLanguages[0].name); 
-                mainContent.classList.remove('disabled-section');
-            } else { 
+            } else {
+                // ถ้ามีภาษาในระบบแล้ว ไม่ต้องแสดง pop-up สร้างภาษา
+                if (!currentLanguage.name && allLanguages.length > 0) {
+                    switchLanguage(allLanguages[0].name); 
+                }
                 mainContent.classList.remove('disabled-section');
                 currentLanguageNameDisplay.textContent = currentLanguage.name;
-                 if (languageSelector.value !== currentLanguage.name) {
+                if (languageSelector.value !== currentLanguage.name) {
                    languageSelector.value = currentLanguage.name;
                 }
                 updateUI();
@@ -514,6 +517,39 @@ deleteLangButton.addEventListener('click', () => {
     }
 });
 
+        // --- Loading Overlay ---
+        const loadingOverlay = document.createElement('div');
+        loadingOverlay.id = 'loadingOverlay';
+        loadingOverlay.style.position = 'fixed';
+        loadingOverlay.style.top = '0';
+        loadingOverlay.style.left = '0';
+        loadingOverlay.style.width = '100vw';
+        loadingOverlay.style.height = '100vh';
+        loadingOverlay.style.background = 'rgba(255,255,255,0.85)';
+        loadingOverlay.style.display = 'flex';
+        loadingOverlay.style.flexDirection = 'column';
+        loadingOverlay.style.alignItems = 'center';
+        loadingOverlay.style.justifyContent = 'center';
+        loadingOverlay.style.zIndex = '9999';
+        loadingOverlay.innerHTML = `
+            <div style="display:flex;flex-direction:column;align-items:center;gap:16px;">
+                <div class="animate-spin" style="border:6px solid #e9d5ff;border-top:6px solid #a21caf;border-radius:50%;width:48px;height:48px;"></div>
+                <div id="loadingPercentText" style="font-size:1.2rem;color:#a21caf;font-weight:600;">0%</div>
+                <div style="font-size:1.1rem;color:#7c3aed;font-weight:500;">กำลังดาวน์โหลดข้อมูล กรุณารอสักครู่...</div>
+            </div>
+        `;
+        function setLoadingPercent(percent) {
+            const percentEl = document.getElementById('loadingPercentText');
+            if (percentEl) percentEl.textContent = `${percent}%`;
+        }
+        document.body.appendChild(loadingOverlay);
+
+        function hideLoadingOverlay() {
+            const el = document.getElementById('loadingOverlay');
+            if (el) el.remove();
+        }
+
+        // --- End Loading Overlay ---
         function ensureDeepStructure(langData, defaultStructure) {
             const newLangData = JSON.parse(JSON.stringify(defaultStructure)); 
         
@@ -902,60 +938,67 @@ deleteLangButton.addEventListener('click', () => {
         }
 
         function loadData() {
-            const savedAllLangs = localStorage.getItem('allLanguagesData');
-            if (savedAllLangs) {
-                const parsedAllLangs = JSON.parse(savedAllLangs);
-                allLanguages = parsedAllLangs.map(lang => ensureDeepStructure(lang, DEFAULT_LANGUAGE_STATE));
-            } else {
-                allLanguages = [];
-            }
-
-            const savedGlobalRules = localStorage.getItem('globalInterLangRules');
-            if (savedGlobalRules) {
-                globalInterLangRules = JSON.parse(savedGlobalRules);
-                nextInterLangPairId = calculateNextId(globalInterLangRules || [], 'il_pair_');
-            } else {
-                globalInterLangRules = [];
-            }
-
-            const savedLangData = localStorage.getItem('currentLanguageData');
-            let langToLoad = null;
-
-            if (savedLangData) {
-                const parsedSavedLang = JSON.parse(savedLangData);
-                if (parsedSavedLang.name) {
-                    // Try to find the version from allLanguages first, as it might be more "canonical" if currentLanguageData was stale
-                    const foundInAll = allLanguages.find(l => l.name === parsedSavedLang.name);
-                    langToLoad = foundInAll ? JSON.parse(JSON.stringify(foundInAll)) : parsedSavedLang;
-                } else { 
-                    // If currentLanguageData has no name (e.g., user was creating new one and closed tab)
-                    // load it as is, it will likely trigger the name modal or be overwritten if allLanguages has content.
-                     langToLoad = parsedSavedLang; 
+            // Simulate progress for localStorage loading (since it's fast, this is for UX only)
+            setLoadingPercent(10);
+            setTimeout(() => {
+                const savedAllLangs = localStorage.getItem('allLanguagesData');
+                setLoadingPercent(30);
+                if (savedAllLangs) {
+                    const parsedAllLangs = JSON.parse(savedAllLangs);
+                    allLanguages = parsedAllLangs.map(lang => ensureDeepStructure(lang, DEFAULT_LANGUAGE_STATE));
+                } else {
+                    allLanguages = [];
                 }
-            } else if (allLanguages.length > 0) {
-                // No specific "current" language, load the first from allLanguages
-                langToLoad = JSON.parse(JSON.stringify(allLanguages[0])); 
-            }
-
-            if (langToLoad) {
-                 currentLanguage = ensureDeepStructure(langToLoad, DEFAULT_LANGUAGE_STATE);
-            } else { // Absolutely no data anywhere
-                currentLanguage = ensureDeepStructure({}, DEFAULT_LANGUAGE_STATE); // Fresh default state
-            }
-            
-            // Initialize next IDs based on the loaded currentLanguage
-            nextWordId = calculateNextWordId(currentLanguage.lexicon);
-            nextConjCategoryId = calculateNextId(currentLanguage.grammar.morphology.conjugationCategories || [], 'cat_');
-            nextConjRuleId = calculateNextId(currentLanguage.grammar.morphology.conjugationRules || [], 'rule_');
-            // nextRuleStepId is recalculated within ensureDeepStructure based on the loaded language's content.
-            nextExternalNodeId = calculateNextId(currentLanguage.languageFamily.externalNodes || [], 'ext_');
-            nextActiveSoundChangeId = calculateNextId(currentLanguage.phonology.activeSoundChanges || [], 'asc_');
-            nextToneId = calculateNextId(currentLanguage.phonology.tones || [], 'tone_');
-            nextTonePhonotacticId = calculateNextId(currentLanguage.phonology.tonePhonotactics || [], 'tp_');
-
-
-            console.log("Data loaded. Current Lang:", currentLanguage.name, "Next Word ID:", nextWordId, "Next RuleStep ID (after load):", nextRuleStepId);
-            renderLanguageSelector(); // Populate dropdown
+                setLoadingPercent(50);
+                setTimeout(() => {
+                    const savedGlobalRules = localStorage.getItem('globalInterLangRules');
+                    setLoadingPercent(65);
+                    if (savedGlobalRules) {
+                        globalInterLangRules = JSON.parse(savedGlobalRules);
+                        nextInterLangPairId = calculateNextId(globalInterLangRules || [], 'il_pair_');
+                    } else {
+                        globalInterLangRules = [];
+                    }
+                    setLoadingPercent(80);
+                    setTimeout(() => {
+                        const savedLangData = localStorage.getItem('currentLanguageData');
+                        let langToLoad = null;
+                        if (savedLangData) {
+                            const parsedSavedLang = JSON.parse(savedLangData);
+                            if (parsedSavedLang.name) {
+                                // Try to find the version from allLanguages first, as it might be more "canonical" if currentLanguageData was stale
+                                const foundInAll = allLanguages.find(l => l.name === parsedSavedLang.name);
+                                langToLoad = foundInAll ? JSON.parse(JSON.stringify(foundInAll)) : parsedSavedLang;
+                            } else {
+                                langToLoad = parsedSavedLang;
+                            }
+                        } else if (allLanguages.length > 0) {
+                            langToLoad = JSON.parse(JSON.stringify(allLanguages[0]));
+                        }
+                        setLoadingPercent(90);
+                        if (langToLoad) {
+                            currentLanguage = ensureDeepStructure(langToLoad, DEFAULT_LANGUAGE_STATE);
+                        } else {
+                            currentLanguage = ensureDeepStructure({}, DEFAULT_LANGUAGE_STATE); // Fresh default state
+                        }
+                        // Initialize next IDs based on the loaded currentLanguage
+                        nextWordId = calculateNextWordId(currentLanguage.lexicon);
+                        nextConjCategoryId = calculateNextId(currentLanguage.grammar.morphology.conjugationCategories || [], 'cat_');
+                        nextConjRuleId = calculateNextId(currentLanguage.grammar.morphology.conjugationRules || [], 'rule_');
+                        // nextRuleStepId is recalculated within ensureDeepStructure based on the loaded language's content.
+                        nextExternalNodeId = calculateNextId(currentLanguage.languageFamily.externalNodes || [], 'ext_');
+                        nextActiveSoundChangeId = calculateNextId(currentLanguage.phonology.activeSoundChanges || [], 'asc_');
+                        nextToneId = calculateNextId(currentLanguage.phonology.tones || [], 'tone_');
+                        nextTonePhonotacticId = calculateNextId(currentLanguage.phonology.tonePhonotactics || [], 'tp_');
+                        setLoadingPercent(100);
+                        setTimeout(() => {
+                            console.log("Data loaded. Current Lang:", currentLanguage.name, "Next Word ID:", nextWordId, "Next RuleStep ID (after load):", nextRuleStepId);
+                            renderLanguageSelector(); // Populate dropdown
+                            hideLoadingOverlay();
+                        }, 200);
+                    }, 200);
+                }, 200);
+            }, 200);
         }
         
         function calculateNextId(itemsArray = [], prefix = '') {
@@ -1328,8 +1371,39 @@ deleteLangButton.addEventListener('click', () => {
         }
 
 
+
+
         function renderPhonologyUI(container) {
+            // แสดงสถานะวรรณยุกต์ของภาษา
+            const toneStatus = currentLanguage.phonology.hasTones ? "มีวรรณยุกต์" : "ไม่มีวรรณยุกต์";
+            const toneStatusEl = document.createElement('div');
+            toneStatusEl.className = "mb-2 text-lg text-purple-700 font-semibold";
+            toneStatusEl.textContent = `ภาษานี้${toneStatus}`;
+            container.appendChild(toneStatusEl);
+
             const phonology = currentLanguage.phonology;
+
+            // Section: จำนวนพยัญชนะและสระ
+            let countSection = container.querySelector('#phonemeCountSection');
+            if (!countSection) {
+                countSection = document.createElement('div');
+                countSection.id = 'phonemeCountSection';
+                countSection.className = 'flex gap-4 mb-2';
+                container.prepend(countSection);
+            }
+            function updatePhonemeCounts() {
+                const cCount = (phonology.consonants || []).length;
+                const vCount = (phonology.vowels || []).length;
+                let html = `
+                    <span class='text-sm'>พยัญชนะ <span class='px-2 py-1 rounded bg-purple-100 text-purple-700 font-semibold'>${cCount}</span> หน่วยเสียง</span>
+                    <span class='text-sm'>สระ <span class='px-2 py-1 rounded bg-purple-100 text-purple-700 font-semibold'>${vCount}</span> หน่วยเสียง</span>
+                `;
+                if (phonology.hasTones && Array.isArray(phonology.tones) && phonology.tones.length > 0) {
+                    html += `<span class='text-sm'>วรรณยุกต์ <span class='px-2 py-1 rounded bg-purple-100 text-purple-700 font-semibold'>${phonology.tones.length}</span> หน่วยเสียง</span>`;
+                }
+                countSection.innerHTML = html;
+            }
+            updatePhonemeCounts();
 
             // Ensure all phonology sub-properties exist, defaulting from DEFAULT_LANGUAGE_STATE
             phonology.allowedInitialConsonants = phonology.allowedInitialConsonants || [...(DEFAULT_LANGUAGE_STATE.phonology.allowedInitialConsonants.length > 0 ? DEFAULT_LANGUAGE_STATE.phonology.allowedInitialConsonants : phonology.consonants)];
@@ -1498,59 +1572,120 @@ deleteLangButton.addEventListener('click', () => {
             });
 
             if (phonology.hasTones) {
+                // Diacritics toggle
+                if (typeof phonology.useDiacritics === 'undefined') phonology.useDiacritics = false;
+                const diacriticsToggleDiv = document.createElement('div');
+                diacriticsToggleDiv.className = 'mb-2';
+                diacriticsToggleDiv.innerHTML = `<label class="flex items-center text-xs"><input type="checkbox" id="useDiacriticsPhonology" class="mr-2" ${phonology.useDiacritics ? 'checked' : ''}>ใช้ diacritics (เครื่องหมายวรรณยุกต์บนหัวสระ)</label>`;
+                tonesSection.appendChild(diacriticsToggleDiv);
+                setTimeout(() => {
+                    const chk = document.getElementById('useDiacriticsPhonology');
+                    if (chk) {
+                        chk.onchange = (e) => {
+                            phonology.useDiacritics = e.target.checked;
+                            saveData();
+                            renderPhonologyUI(container);
+                        };
+                    }
+                }, 0);
+
                 const toneManagementDiv = document.createElement('div');
                 toneManagementDiv.id = 'toneManagementSectionPhonology';
                 toneManagementDiv.className = 'mt-2 p-2 border-t';
-                
+
                 const tonesListDiv = document.createElement('div');
                 tonesListDiv.className = 'mb-2 space-y-1';
-                (phonology.tones || []).forEach(tone => {
+                (phonology.tones || []).forEach((tone, idx) => {
                     const toneDisplay = document.createElement('div');
-                    toneDisplay.className = 'flex justify-between items-center bg-white p-1.5 rounded border text-sm';
-                    toneDisplay.innerHTML = `<span>${tone.name} (สัญลักษณ์: ${tone.representation || 'N/A'}, เลข: ${tone.number}) ${tone.hideInOrthography ? '<em class="text-xs text-gray-500">(ซ่อนรูป)</em>' : ''}</span>
-                                           <button class="text-red-500 hover:text-red-700 text-xs" onclick="removeTonePhonology('${tone.id}')">&times; ลบ</button>`;
+                    toneDisplay.className = 'flex flex-col sm:flex-row sm:justify-between sm:items-center bg-white p-1.5 rounded border text-sm gap-1';
+                    let diacriticsDropdown = '';
+                    if (phonology.useDiacritics) {
+                        // Default diacritics mapping
+                        if (typeof tone.diacritic === 'undefined') {
+                            const defaultMap = {1:'`',2:'´',3:'ˆ',4:'ˇ'};
+                            tone.diacritic = defaultMap[tone.number] || '';
+                        }
+                        diacriticsDropdown = '<select class="diacritics-select" data-tone-idx="'+idx+'">'
+                            + '<option value="">(ไม่มี)</option>'
+                            + '<option value="&#x60;"'+(tone.diacritic==='`'?' selected':'')+'>` (เสียงเอก)</option>'
+                            + '<option value="&#xB4;"'+(tone.diacritic==='´'?' selected':'')+'>´ (เสียงโท)</option>'
+                            + '<option value="&#x2C6;"'+(tone.diacritic==='ˆ'?' selected':'')+'>ˆ (เสียงตรี)</option>'
+                            + '<option value="&#x2C7;"'+(tone.diacritic==='ˇ'?' selected':'')+'>ˇ (เสียงจัตวา)</option>'
+                            + '</select>';
+                    }
+                    toneDisplay.innerHTML = '<div><span>' + tone.name + ' (สัญลักษณ์: ' + (tone.representation || tone.symbol || 'N/A') + ', เลข: ' + (tone.number !== undefined ? tone.number : (tone.value || 'N/A')) + ')' + (tone.hideInOrthography ? '<em class="text-xs text-gray-500">(ซ่อนรูป)</em>' : '') + '</span>' + (phonology.useDiacritics ? ' <span class="ml-2 text-xs">diacritics: </span>' + diacriticsDropdown : '') + '</div>'
+                        + '<button class="text-red-500 hover:text-red-700 text-xs tone-delete-btn" data-tone-idx="'+idx+'">&times; ลบ</button>';
                     tonesListDiv.appendChild(toneDisplay);
                 });
                 toneManagementDiv.appendChild(tonesListDiv);
+                // Add delete event and diacritics event
+                setTimeout(() => {
+                    tonesListDiv.querySelectorAll('.tone-delete-btn').forEach(btn => {
+                        btn.onclick = (e) => {
+                            const idx = parseInt(btn.getAttribute('data-tone-idx'));
+                            if (phonology.tones.length > 1) {
+                                phonology.tones.splice(idx, 1);
+                                saveData();
+                                renderPhonologyUI(container);
+                            } else {
+                                alert('ต้องมีเสียงวรรณยุกต์อย่างน้อย 1 เสียง');
+                            }
+                        };
+                    });
+                    if (phonology.useDiacritics) {
+                        tonesListDiv.querySelectorAll('.diacritics-select').forEach(sel => {
+                            sel.onchange = (e) => {
+                                const idx = parseInt(sel.getAttribute('data-tone-idx'));
+                                phonology.tones[idx].diacritic = sel.value;
+                                saveData();
+                            };
+                        });
+                    }
+                }, 0);
 
                 const addToneForm = document.createElement('div');
                 addToneForm.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 items-end p-2 border bg-purple-100 rounded';
-                addToneForm.innerHTML = `
-                    <div class="flex-grow"><label class="text-xs">ชื่อเสียงวรรณยุกต์:</label><input type="text" id="newToneNamePhonology" placeholder="เช่น เสียงเอก" class="w-full p-1 border rounded text-sm"></div>
-                    <div class="flex-grow"><label class="text-xs">สัญลักษณ์ (แสดงผล):</label><input type="text" id="newToneRepresentationPhonology" placeholder="เช่น ¹ หรือ L" class="w-full p-1 border rounded text-sm"></div>
-                    <div><label class="text-xs">เลขแทนเสียง:</label>
-                        <select id="newToneNumberPhonology" class="w-full p-1 border rounded text-sm">
-                            <option value="0">0 (สามัญ/ไม่มีรูป)</option>
-                            <option value="1">1 (เอก)</option>
-                            <option value="2">2 (โท)</option>
-                            <option value="3">3 (ตรี)</option>
-                            <option value="4">4 (จัตวา)</option>
-                            <option value="5">5</option> <option value="6">6</option> <option value="7">7</option> <option value="8">8</option> <option value="9">9</option>
-                        </select>
-                    </div>
-                     <div class="flex items-center mt-1 md:mt-0"><input type="checkbox" id="newToneHideInOrthographyPhonology" class="h-3.5 w-3.5 mr-1"><label for="newToneHideInOrthographyPhonology" class="text-xs">ซ่อนสัญลักษณ์นี้ในอักขรวิธี</label></div>
-                    <button id="addToneButtonPhonology" class="btn-secondary px-2 py-1 rounded text-sm self-end sm:col-span-2 md:col-auto">เพิ่มวรรณยุกต์</button>
-                `;
+                addToneForm.innerHTML = '<div class="flex-grow"><label class="text-xs">ชื่อเสียงวรรณยุกต์:</label><input type="text" id="newToneNamePhonology" placeholder="เช่น เสียงเอก" class="w-full p-1 border rounded text-sm"></div>'
+                    + '<div class="flex-grow"><label class="text-xs">สัญลักษณ์ (แสดงผล):</label><input type="text" id="newToneRepresentationPhonology" placeholder="เช่น ¹ หรือ L" class="w-full p-1 border rounded text-sm"></div>'
+                    + '<div><label class="text-xs">เลขแทนเสียง:</label>'
+                    + '<select id="newToneNumberPhonology" class="w-full p-1 border rounded text-sm">'
+                    + '<option value="0">0 (สามัญ/ไม่มีรูป)</option>'
+                    + '<option value="1">1 (เอก)</option>'
+                    + '<option value="2">2 (โท)</option>'
+                    + '<option value="3">3 (ตรี)</option>'
+                    + '<option value="4">4 (จัตวา)</option>'
+                    + '<option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option>'
+                    + '</select></div>'
+                    + (phonology.useDiacritics ? '<div class="flex-grow"><label class="text-xs">diacritics:</label><input type="text" id="newToneDiacriticPhonology" placeholder="เช่น &#x60;" class="w-full p-1 border rounded text-sm"></div>' : '')
+                    + '<div class="flex items-center mt-1 md:mt-0"><input type="checkbox" id="newToneHideInOrthographyPhonology" class="h-3.5 w-3.5 mr-1"><label for="newToneHideInOrthographyPhonology" class="text-xs">ซ่อนสัญลักษณ์นี้ในอักขรวิธี</label></div>'
+                    + '<button id="addToneButtonPhonology" class="btn-secondary px-2 py-1 rounded text-sm self-end sm:col-span-2 md:col-auto">เพิ่มวรรณยุกต์</button>';
                 toneManagementDiv.appendChild(addToneForm);
                 tonesSection.appendChild(toneManagementDiv);
 
-                const tonePhonotacticsDiv = document.createElement('div');
-                tonePhonotacticsDiv.className = 'mt-3 p-2 border-t';
-                tonePhonotacticsDiv.innerHTML = `<h5 class="font-medium text-purple-600 mb-2">กฎการออกเสียงวรรณยุกต์ (Tone Phonotactics)</h5>
-                     <div id="tonePhonotacticsListPhonology" class="max-h-40 overflow-y-auto space-y-1 mb-2"></div>
-                     <div class="p-2 border bg-purple-100 rounded">
-                         <h6 class="text-sm font-semibold mb-1">เพิ่มกฎใหม่:</h6>
-                         <div class="grid grid-cols-1 md:grid-cols-2 gap-2 items-end">
-                             <div><label class="text-xs">กลุ่มพยัญชนะต้น (คั่นด้วย ,):</label><input type="text" id="tpRuleInitials" placeholder="เช่น k,ph,t" class="w-full p-1 border rounded text-xs" list="${phonemeDatalistId}"></div>
-                             <div><label class="text-xs">กลุ่มพยัญชนะท้าย (คั่นด้วย ,):</label><input type="text" id="tpRuleFinals" placeholder="เช่น m,ŋ" class="w-full p-1 border rounded text-xs" list="${phonemeDatalistId}"></div>
-                             <div><label class="text-xs">วรรณยุกต์ต้องห้าม (เลือกหลายรายการ):</label><select id="tpRuleForbiddenTones" multiple class="w-full p-1 border rounded text-xs h-16"></select></div>
-                             <div class="md:col-span-2"><label class="text-xs">คำอธิบายกฎ:</label><input type="text" id="tpRuleDescription" placeholder="เช่น ก-เป็น + ม-สะกด ห้ามวรรณยุกต์โท" class="w-full p-1 border rounded text-xs"></div>
-                         </div>
-                         <button id="addTonePhonotacticRuleBtn" class="btn-secondary px-2 py-1 mt-2 rounded text-sm">เพิ่มกฎวรรณยุกต์</button>
-                     </div>`;
-                tonesSection.appendChild(tonePhonotacticsDiv);
-                renderTonePhonotacticsList();
-                populateTonePhonotacticToneSelect();
+                // Add event for add button
+                setTimeout(() => {
+                    const addBtn = document.getElementById('addToneButtonPhonology');
+                    if (addBtn) {
+                        addBtn.onclick = () => {
+                            const name = document.getElementById('newToneNamePhonology').value.trim();
+                            const representation = document.getElementById('newToneRepresentationPhonology').value.trim();
+                            const number = document.getElementById('newToneNumberPhonology').value;
+                            const hide = document.getElementById('newToneHideInOrthographyPhonology').checked;
+                            let diacritic = '';
+                            if (phonology.useDiacritics) {
+                                const dInput = document.getElementById('newToneDiacriticPhonology');
+                                if (dInput) diacritic = dInput.value.trim();
+                            }
+                            if (!name) { alert('กรุณากรอกชื่อเสียงวรรณยุกต์'); return; }
+                            if (phonology.tones.some(t => (t.number !== undefined ? String(t.number) : t.value) === number)) { alert('เลขวรรณยุกต์ซ้ำ'); return; }
+                            const newTone = { name, representation, number: parseInt(number), hideInOrthography: hide };
+                            if (phonology.useDiacritics) newTone.diacritic = diacritic;
+                            phonology.tones.push(newTone);
+                            saveData();
+                            renderPhonologyUI(container);
+                        };
+                    }
+                }, 0);
             }
             phonologyContainer.appendChild(tonesSection);
 
@@ -2117,6 +2252,7 @@ deleteLangButton.addEventListener('click', () => {
         function renderWordGeneratorUI(container) {
             const section = document.createElement('div');
             section.className = 'space-y-4 p-3 border border-green-200 rounded-md bg-green-50';
+            // แสดง custom symbol mapping ถ้าเลือก writingSystem เป็น custom
             section.innerHTML = `
                 <div>
                     <label class="block text-sm font-medium text-green-700">จำนวนพยางค์ต่อคำ:</label>
@@ -2145,14 +2281,22 @@ deleteLangButton.addEventListener('click', () => {
         function getOrthographicForm(wordEntry, forDisplay = true, useFirstGraphemeForAutoInflection = false) {
             if (!wordEntry) return "";
             // If a custom orthography is defined for the word, always use it.
-            if (wordEntry.customOrthography && typeof wordEntry.customOrthography === 'string' && wordEntry.customOrthography.trim() !== '') {
+            if (wordEntry.customOrthography) {
                 return wordEntry.customOrthography;
             }
-            // Otherwise, transliterate the base phonemic form.
-            // wordEntry.word is expected to be the base phonemic form including any tone markers.
+            // If the word is in the dictionary, preserve its orthography (never randomize again)
+            if (wordEntry.id && currentLanguage && currentLanguage.lexicon && Array.isArray(currentLanguage.lexicon)) {
+                const dictWord = currentLanguage.lexicon.find(w => w.id === wordEntry.id);
+                if (dictWord && dictWord.customOrthography) return dictWord.customOrthography;
+            }
+            // Otherwise, transliterate the base phonemic form strictly
             const basePhonemicForm = typeof wordEntry.word === 'string' ? wordEntry.word : '';
-            // Pass the useFirstGraphemeForAutoInflection flag to transliterateWordToSymbols.
-            return transliterateWordToSymbols(basePhonemicForm, forDisplay, useFirstGraphemeForAutoInflection);
+            // Always use deterministic mapping for display in dictionary/other systems
+            // If writing system is custom, return HTML with custom symbol images/text
+            if (currentLanguage.orthography && currentLanguage.orthography.writingSystem === 'custom' && Array.isArray(currentLanguage.orthography.customSymbols) && currentLanguage.orthography.customSymbols.length > 0) {
+                return transliterateWordToSymbols(basePhonemicForm, forDisplay, true, true);
+            }
+            return transliterateWordToSymbols(basePhonemicForm, forDisplay, true);
         }
 
 
@@ -2161,14 +2305,16 @@ deleteLangButton.addEventListener('click', () => {
         // - wordString: The phonemic string to transliterate.
         // - forDisplay: Boolean, if true, considers displayTonesInOrthography. (Currently always true when called from getOrthographicForm)
         // - useFirstGraphemeOnly: Boolean, if true, selects the first available grapheme from mappings for determinism. Otherwise, selects randomly.
-        function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraphemeOnly = false) {
+function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraphemeOnly = false, returnHtml = false) {
             if (!wordString && typeof wordString !== 'string') return ""; 
             const { writingSystem, customSymbols, displayTonesInOrthography } = currentLanguage.orthography;
-            const { graphemeMappings, tones: definedTones, hasTones, consonants, vowels } = currentLanguage.phonology;
-        
+            const { graphemeMappings, tones: definedTones, hasTones, consonants, vowels, useDiacritics } = currentLanguage.phonology;
+
             let baseWord = String(wordString);
             let toneMarker = "";
-        
+            let toneDiacritic = "";
+            let toneObj = null;
+
             // Extract tone from the end of the phonemic string if tones are enabled and defined.
             if (hasTones && definedTones && definedTones.length > 0) {
                 const numericSuperscripts = ["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"];
@@ -2178,24 +2324,34 @@ deleteLangButton.addEventListener('click', () => {
                     .filter(item => item.rep && typeof item.rep === 'string') 
                     .sort((a,b) => b.rep.length - a.rep.length); 
 
-                 for (const item of toneRepresentationsSorted) {
+                for (const item of toneRepresentationsSorted) {
                     if (item.rep && baseWord.endsWith(item.rep)) { 
-                        // Assign tone marker if forDisplay is true, displayTonesInOrthography is true, and tone is not hidden.
-                        toneMarker = (forDisplay && displayTonesInOrthography && !item.tone.hideInOrthography) ? item.rep : "";
+                        toneObj = item.tone;
+                        // ถ้ามี representation ให้ใช้ ถ้าไม่มีให้ใช้เลขยกกำลัง
+                        toneMarker = (forDisplay && displayTonesInOrthography && !item.tone.hideInOrthography)
+                            ? (item.tone.representation || numericSuperscripts[item.tone.number] || "")
+                            : "";
+                        toneDiacritic = (useDiacritics && item.tone.diacritic) ? item.tone.diacritic : "";
                         baseWord = baseWord.slice(0, -item.rep.length); // Remove tone from baseWord
                         break;
                     }
                 }
                 // If no complex tone found, check for simple numeric superscript.
-                if (!toneMarker) {
+                if (!toneMarker && !toneDiacritic) {
                     for (let i = 0; i < numericSuperscripts.length; i++) {
                         if (baseWord.endsWith(numericSuperscripts[i])) {
                             const foundToneNumber = i;
                             const matchedTone = definedTones.find(t => t.number === foundToneNumber);
                             if (matchedTone) {
-                                 toneMarker = (forDisplay && displayTonesInOrthography && !matchedTone.hideInOrthography) ? (matchedTone.representation || numericSuperscripts[i]) : "";
+                                toneObj = matchedTone;
+                                // ถ้ามี representation ให้ใช้ ถ้าไม่มีให้ใช้เลขยกกำลัง
+                                toneMarker = (forDisplay && displayTonesInOrthography && !matchedTone.hideInOrthography)
+                                    ? (matchedTone.representation || numericSuperscripts[i])
+                                    : "";
+                                toneDiacritic = (useDiacritics && matchedTone.diacritic) ? matchedTone.diacritic : "";
                             } else { // Unmapped numeric tone, still display if allowed.
-                                 toneMarker = (forDisplay && displayTonesInOrthography) ? numericSuperscripts[i] : "";
+                                // ถ้าไม่มี mapping ใด ๆ ให้แสดงเลขยกกำลัง
+                                toneMarker = (forDisplay && displayTonesInOrthography) ? numericSuperscripts[i] : "";
                             }
                             baseWord = baseWord.slice(0, -1); // Remove tone from baseWord
                             break;
@@ -2203,102 +2359,184 @@ deleteLangButton.addEventListener('click', () => {
                     }
                 }
             }
-        
+
             let transliterated = '';
             let remainingWord = baseWord;
-        
+
+            // If diacritics are enabled, insert the diacritic on the first vowel of each syllable, using the correct tone for each syllable
+            if (useDiacritics && forDisplay && displayTonesInOrthography) {
+                // Split by syllable boundaries (dot or whitespace)
+                let syllables = baseWord.split(/\.|\s+/);
+                let result = [];
+                // Try to extract tone for each syllable from the original wordString
+                // Assume the input is in the form: ma¹ man²ta³, etc. (syllable + tone marker)
+                // We'll use the definedTones to match at the end of each syllable
+                let originalSyllables = (typeof wordString === 'string') ? wordString.split(/\.|\s+/) : [];
+                for (let s = 0; s < syllables.length; s++) {
+                    let syll = syllables[s];
+                    let origSyll = originalSyllables[s] || '';
+                    let thisToneDiacritic = '';
+                    // Try to find the tone for this syllable
+                    if (hasTones && definedTones && definedTones.length > 0) {
+                        let found = false;
+                        // Check for representation at end
+                        for (const t of definedTones) {
+                            if (t.representation && origSyll.endsWith(t.representation)) {
+                                // ถ้า hideInOrthography เป็น true จะไม่ใส่ diacritic เลย (ทุกพยางค์)
+                                if (!t.hideInOrthography && t.diacritic) {
+                                    thisToneDiacritic = t.diacritic;
+                                } else {
+                                    thisToneDiacritic = '';
+                                }
+                                found = true;
+                                break;
+                            }
+                        }
+                        // If not found, check for numeric superscript
+                        if (!found) {
+                            const numericSuperscripts = ["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"];
+                            for (let i = 0; i < numericSuperscripts.length; i++) {
+                                if (origSyll.endsWith(numericSuperscripts[i])) {
+                                    const matchedTone = definedTones.find(t => t.number === i);
+                                    if (matchedTone) {
+                                        if (!matchedTone.hideInOrthography && matchedTone.diacritic) {
+                                            thisToneDiacritic = matchedTone.diacritic;
+                                        } else {
+                                            thisToneDiacritic = '';
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    let inserted = false;
+                    let newSyll = '';
+                    // ถ้า hasTones จริง แต่ไม่มี diacritic หรือถูก hide ทุกตัว ให้ไม่แสดง diacritic ใด ๆ
+                    let showDiacritic = true;
+                    if (hasTones && definedTones && definedTones.length > 0) {
+                        // ถ้าไม่มี definedTones ที่ !hideInOrthography และมี diacritic เลย ให้ปิดการแสดง diacritic
+                        const anyVisibleDiacritic = definedTones.some(t => !t.hideInOrthography && t.diacritic);
+                        if (!anyVisibleDiacritic) showDiacritic = false;
+                    }
+                    for (let i = 0; i < syll.length; i++) {
+                        let ch = syll[i];
+                        if (!inserted && vowels && vowels.includes(ch) && thisToneDiacritic && showDiacritic) {
+                            newSyll += ch + thisToneDiacritic;
+                            inserted = true;
+                        } else {
+                            newSyll += ch;
+                        }
+                    }
+                    result.push(newSyll);
+                }
+                transliterated = result.join('.');
+                return transliterated;
+            }
+
             // Handle custom writing system first.
             if (writingSystem === 'custom' && customSymbols && customSymbols.length > 0) {
                 const sortedSymbols = [...customSymbols].sort((a, b) => b.sound.length - a.sound.length); // Longest sound first for matching.
+                let html = '';
                 while (remainingWord.length > 0) {
                     let foundMatch = false;
                     for (const sym of sortedSymbols) {
                         if (remainingWord.startsWith(sym.sound)) {
-                            transliterated += sym.symbol;
+                            if (returnHtml) {
+                                if (sym.imageData) {
+                                    // ถ้ามี imageData ให้แสดง image
+                                    html += `<img src='${sym.imageData}' alt='${sym.sound}' style='height:1.5em;display:inline-block;vertical-align:middle;background:transparent;margin:0 1px;'/>`;
+                                } else if (sym.symbol && sym.symbol.trim()) {
+                                    // ถ้าไม่มี image แต่มี symbol ให้แสดง symbol
+                                    html += `<span style='display:inline-block;vertical-align:middle;font-size:1.2em;margin:0 1px;'>${sym.symbol}</span>`;
+                                } else {
+                                    // ถ้าไม่มีทั้งสอง ให้แสดง sound (text)
+                                    html += `<span style='display:inline-block;vertical-align:middle;font-size:1.2em;margin:0 1px;color:#aaa;'>${sym.sound}</span>`;
+                                }
+                            } else {
+                                if (sym.imageData) {
+                                    // ถ้ามี imageData ให้แสดงเป็น [img] (หรือจะข้ามไปก็ได้ แต่เพื่อความสอดคล้อง ให้แสดงเป็นสัญลักษณ์พิเศษ)
+                                    transliterated += '[img]';
+                                } else if (sym.symbol && sym.symbol.trim()) {
+                                    transliterated += sym.symbol;
+                                } else {
+                                    transliterated += sym.sound;
+                                }
+                            }
                             remainingWord = remainingWord.substring(sym.sound.length);
                             foundMatch = true;
                             break;
                         }
                     }
-                    if (!foundMatch) { // If no custom symbol matches, append the character as is.
-                        transliterated += remainingWord[0];
+                    if (!foundMatch) {
+                        // If no custom symbol matches, append the character as is.
+                        if (returnHtml) {
+                            html += `<span style='color:#aaa;'>${remainingWord[0]}</span>`;
+                        } else {
+                            transliterated += remainingWord[0];
+                        }
                         remainingWord = remainingWord.substring(1);
                     }
                 }
+                if (returnHtml) {
+                    // Add tone marker if needed
+                    if (toneMarker) html += `<sup style='font-size:0.7em;color:#a855f7;'>${toneMarker}</sup>`;
+                    return html;
+                } else {
+                    return transliterated + toneMarker;
+                }
             } else if (writingSystem === 'latin' && graphemeMappings && graphemeMappings.length > 0) {
-                // Handle Latin-based system with grapheme mappings.
-                // Sort mappings by sound length (longest first) to ensure correct matching (e.g., "sh" before "s").
+                // Strict mapping: initial = initialGraphemes, vowel = vowelGraphemes, final = finalGraphemes
                 const sortedMappings = [...graphemeMappings].sort((a, b) => b.sound.length - a.sound.length);
                 let currentOriginalPos = 0; // Track position in the original baseWord for context (initial/final).
-                
+
                 while (remainingWord.length > 0) {
                     let foundMatch = false;
-                    for (const gm of sortedMappings) { // Iterate through each grapheme mapping.
-                        if (remainingWord.startsWith(gm.sound)) { // If the current sound in mapping matches the start of remainingWord.
-                            let potentialGraphemes = []; // List of possible graphemes to choose from for this sound.
-                            
-                            // Determine context of the sound.
-                            const isInitialSoundSegment = currentOriginalPos === 0; 
-                            const isFinalSoundSegment = (currentOriginalPos + gm.sound.length === baseWord.length); 
+                    for (const gm of sortedMappings) {
+                        if (remainingWord.startsWith(gm.sound)) {
+                            let potentialGraphemes = [];
+                            const isInitialSoundSegment = currentOriginalPos === 0;
+                            const isFinalSoundSegment = (currentOriginalPos + gm.sound.length === baseWord.length);
                             const isConsonantSound = (currentLanguage.phonology.consonants || []).includes(gm.sound);
                             const isVowelSound = (currentLanguage.phonology.vowels || []).includes(gm.sound);
 
+                            // Strict: Only use initialGraphemes for initial, finalGraphemes for final, vowelGraphemes for vowels
                             if (isConsonantSound) {
                                 if (isInitialSoundSegment && gm.initialGraphemes && gm.initialGraphemes.length > 0) {
                                     potentialGraphemes = gm.initialGraphemes;
                                 } else if (isFinalSoundSegment && gm.finalGraphemes && gm.finalGraphemes.length > 0) {
                                     potentialGraphemes = gm.finalGraphemes;
-                                } else { // Medial consonant or consonant without specific positional mapping
-                                    if (gm.initialGraphemes && gm.initialGraphemes.length > 0) {
-                                        potentialGraphemes = gm.initialGraphemes;
-                                    } else if (gm.finalGraphemes && gm.finalGraphemes.length > 0) {
-                                        potentialGraphemes = gm.finalGraphemes;
-                                    } else if (gm.vowelGraphemes && gm.vowelGraphemes.length > 0) { // Fallback for sounds like glides mapped as vowelGraphemes
-                                        potentialGraphemes = gm.vowelGraphemes;
-                                    }
+                                } else {
+                                    // No fallback: do not use other types
+                                    potentialGraphemes = [];
                                 }
                             } else if (isVowelSound) {
                                 if (gm.vowelGraphemes && gm.vowelGraphemes.length > 0) {
                                     potentialGraphemes = gm.vowelGraphemes;
-                                } else if (isInitialSoundSegment && gm.initialGraphemes && gm.initialGraphemes.length > 0) {
-                                    potentialGraphemes = gm.initialGraphemes;
-                                } else if (isFinalSoundSegment && gm.finalGraphemes && gm.finalGraphemes.length > 0) {
-                                    potentialGraphemes = gm.finalGraphemes;
-                                } else if (gm.initialGraphemes && gm.initialGraphemes.length > 0) { // Medial fallback
-                                     potentialGraphemes = gm.initialGraphemes;
+                                } else {
+                                    potentialGraphemes = [];
                                 }
                             }
 
-                            if (potentialGraphemes.length === 0) { // General fallback if no specific positional list was chosen or was empty
-                                const allDefinedGraphemes = [
-                                    ...(gm.initialGraphemes || []),
-                                    ...(gm.vowelGraphemes || []), // Vowel graphemes can be a general representation
-                                    ...(gm.finalGraphemes || [])
-                                ].filter(Boolean);
-                                if (allDefinedGraphemes.length > 0) {
-                                    potentialGraphemes = allDefinedGraphemes;
-                                }
-                            }
-                            
                             let chosenGrapheme = null;
                             if (potentialGraphemes.length > 0) {
                                 if (useFirstGraphemeOnly) {
-                                    chosenGrapheme = potentialGraphemes[0]; 
+                                    chosenGrapheme = potentialGraphemes[0];
                                 } else {
-                                    chosenGrapheme = potentialGraphemes[Math.floor(Math.random() * potentialGraphemes.length)]; 
+                                    chosenGrapheme = potentialGraphemes[Math.floor(Math.random() * potentialGraphemes.length)];
                                 }
                             }
 
                             if (chosenGrapheme) {
                                 transliterated += chosenGrapheme;
                                 remainingWord = remainingWord.substring(gm.sound.length);
-                                currentOriginalPos += gm.sound.length; 
+                                currentOriginalPos += gm.sound.length;
                                 foundMatch = true;
-                                break; 
+                                break;
                             }
                         }
                     }
-                    if (!foundMatch) { 
+                    if (!foundMatch) {
                         transliterated += remainingWord[0];
                         remainingWord = remainingWord.substring(1);
                         currentOriginalPos += 1;
@@ -2307,8 +2545,8 @@ deleteLangButton.addEventListener('click', () => {
             } else { 
                 transliterated = baseWord;
             }
-        
-            return transliterated + toneMarker; 
+
+            return transliterated + toneMarker; // toneMarker will be empty if diacritics are enabled
         }
 
 
@@ -2338,8 +2576,43 @@ deleteLangButton.addEventListener('click', () => {
                 const detailedPhonetics = autoFormatDetailedPhonetics(finalPhoneticWord, currentLanguage.phonology);
                 // For word generation list display, use random grapheme selection (useFirstGraphemeForAutoInflection = false).
                 // The specific generated displayWord will be passed to showWordModal if the user decides to add it.
-                const displayWord = getOrthographicForm({word: finalPhoneticWord, customOrthography: null}, true, false);
-
+                // Render orthography with custom symbol images if writing system is custom
+                let orthographyHtml = '';
+                if (currentLanguage.orthography.writingSystem === 'custom' && Array.isArray(currentLanguage.orthography.customSymbols) && currentLanguage.orthography.customSymbols.length > 0) {
+                    // Map sounds to custom symbol objects for fast lookup
+                    const customSymbolMap = {};
+                    currentLanguage.orthography.customSymbols.forEach(sym => { customSymbolMap[sym.sound] = sym; });
+                    // Try to match the generated word to custom symbols (longest match first)
+                    let word = finalPhoneticWord;
+                    let i = 0;
+                    while (i < word.length) {
+                        let matched = false;
+                        // Try to match longest sound first
+                        const sortedSymbols = [...currentLanguage.orthography.customSymbols].sort((a, b) => b.sound.length - a.sound.length);
+                        for (const sym of sortedSymbols) {
+                            if (word.slice(i, i + sym.sound.length) === sym.sound) {
+                                if (sym.imageData) {
+                                    orthographyHtml += `<img src='${sym.imageData}' alt='img' style='height:28px;vertical-align:middle;background:transparent;display:inline-block;margin-right:2px;'/>`;
+                                } else if (sym.symbol) {
+                                    orthographyHtml += `<span class='font-mono' style='font-size:1.2em;margin-right:2px;'>${sym.symbol}</span>`;
+                                } else {
+                                    orthographyHtml += `<span class=\"text-gray-400\" style='margin-right:2px;'>(ว่าง)</span>`;
+                                }
+                                i += sym.sound.length;
+                                matched = true;
+                                break;
+                            }
+                        }
+                        if (!matched) {
+                            // If no custom symbol matches, show the character as is
+                            orthographyHtml += `<span class='font-mono' style='color:#888;margin-right:2px;'>${word[i]}</span>`;
+                            i++;
+                        }
+                    }
+                } else {
+                    // Fallback: use plain orthography string
+                    orthographyHtml = getOrthographicForm({word: finalPhoneticWord, customOrthography: null}, true, false);
+                }
 
                 let randomMeaning = "";
                 if (apiThaiMeaningsDatabase.length > 0) {
@@ -2352,10 +2625,10 @@ deleteLangButton.addEventListener('click', () => {
                 listItem.className = 'p-2 my-1 bg-gray-50 hover:bg-green-50 rounded flex justify-between items-center flex-wrap';
 
                 const wordDisplaySpan = document.createElement('span');
-                wordDisplaySpan.className = 'font-semibold mr-2';
-                wordDisplaySpan.innerHTML = `${displayWord} <span class="text-sm text-gray-500 font-normal font-mono">(${finalPhoneticWord})</span> <span class="text-xs text-blue-400 font-normal font-mono">[ฐานดิบ: ${rawWordFormBeforeActiveChanges}]</span>`;
+                wordDisplaySpan.className = 'font-semibold mr-2 flex items-center';
+                wordDisplaySpan.innerHTML = `${orthographyHtml} <span class="text-sm text-gray-500 font-normal font-mono ml-2">(${finalPhoneticWord})</span> <span class="text-xs text-blue-400 font-normal font-mono ml-2">[ฐานดิบ: ${rawWordFormBeforeActiveChanges}]</span>`;
                 if (randomMeaning) {
-                     wordDisplaySpan.innerHTML += ` <span class="text-xs text-blue-500">หมายถึง: ${randomMeaning}</span>`;
+                     wordDisplaySpan.innerHTML += ` <span class="text-xs text-blue-500 ml-2">หมายถึง: ${randomMeaning}</span>`;
                 }
                 listItem.appendChild(wordDisplaySpan);
 
@@ -2363,7 +2636,7 @@ deleteLangButton.addEventListener('click', () => {
                 addButton.innerHTML = '➕ <span class="hidden sm:inline">เพิ่มในพจนานุกรม</span>';
                 addButton.className = 'ml-auto text-xs btn-secondary bg-green-400 hover:bg-green-500 px-2 py-1 rounded whitespace-nowrap';
                 // Pass the initially generated displayWord to showWordModal
-                addButton.onclick = () => showWordModal(null, finalPhoneticWord, detailedPhonetics, randomMeaning, displayWord); 
+                addButton.onclick = () => showWordModal(null, finalPhoneticWord, detailedPhonetics, randomMeaning, orthographyHtml); 
                 listItem.appendChild(addButton);
                 listElement.appendChild(listItem);
             }
@@ -2561,15 +2834,13 @@ deleteLangButton.addEventListener('click', () => {
         // Helper function to create a single rule step's UI
         function createRuleStepUI(step = { id: `step_${nextRuleStepId++}`, order: 0, ruleType: 'suffix', ruleValue: '' }, forNounPlural = false) {
             const stepDiv = document.createElement('div');
-            stepDiv.className = 'p-2 mb-2 border rounded bg-purple-100 rule-step-item draggable-item'; // Added draggable-item
+            stepDiv.className = 'p-2 mb-2 border rounded bg-purple-100 rule-step-item draggable-item';
             stepDiv.dataset.stepId = step.id;
             stepDiv.dataset.order = step.order;
-            stepDiv.setAttribute('draggable', true); // Make it draggable
-
+            stepDiv.setAttribute('draggable', true);
 
             let valueInputHTML = '';
-            const currentRuleValue = forNounPlural ? step.value : step.ruleValue; // Use step.value for noun plural
-
+            const currentRuleValue = forNounPlural ? step.value : step.ruleValue;
             if (step.ruleType === 'conditionalSuffix') {
                 const parts = (currentRuleValue || 'N/A>N/A>N/A').split('>');
                 valueInputHTML = `
@@ -2580,6 +2851,31 @@ deleteLangButton.addEventListener('click', () => {
                     </div>`;
             } else {
                 valueInputHTML = `<input type="text" value="${currentRuleValue || ''}" placeholder="ค่า" class="w-full p-1 border rounded text-xs rule-step-value">`;
+            }
+
+            // --- Logograph image UI for logographic writing system ---
+            let logographImageSection = '';
+            const isLogographic = currentLanguage.orthography && currentLanguage.orthography.writingSystem === 'logographic';
+            if (isLogographic) {
+                logographImageSection = `
+                <div class="mt-2 border rounded p-2 bg-white">
+                    <label class="block text-xs font-medium mb-1">อักษรภาพ (Logograph) สำหรับขั้นตอนนี้:</label>
+                    <input type="file" class="rule-step-logograph-upload mb-1" accept="image/png">
+                    <button type="button" class="btn-secondary btn-xs draw-rule-step-logograph">วาดภาพ</button>
+                    <div class="mt-1"><img class="rule-step-logograph-preview max-h-16 mb-1" src="${step.logographImage ? step.logographImage : ''}" style="${step.logographImage ? '' : 'display:none;'};background:transparent;border:none;box-shadow:none;border-radius:0;"/></div>
+                    <button type="button" class="btn-secondary btn-xs clear-rule-step-logograph ${step.logographImage ? '' : 'hidden'}">ลบภาพ</button>
+                    <div class="draw-rule-step-logograph-modal fixed inset-0 z-[90] flex items-center justify-center modal hidden p-4">
+                        <div class="modal-content p-4 rounded-lg shadow-xl w-full max-w-xs bg-white">
+                            <h4 class="text-base font-bold mb-2">วาดอักษรภาพ (ขั้นตอน)</h4>
+                            <canvas width="128" height="128" class="rule-step-logograph-canvas border bg-white mb-2"></canvas>
+                            <div class="flex gap-2 mb-2">
+                                <button type="button" class="btn-secondary btn-xs clear-canvas">ลบทั้งหมด</button>
+                                <button type="button" class="btn-primary btn-xs save-canvas">บันทึกภาพ</button>
+                                <button type="button" class="btn-secondary btn-xs cancel-canvas">ยกเลิก</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
             }
 
             stepDiv.innerHTML = `
@@ -2602,6 +2898,7 @@ deleteLangButton.addEventListener('click', () => {
                     </div>
                     <div class="rule-step-value-container">${valueInputHTML}</div>
                 </div>
+                ${logographImageSection}
             `;
 
             stepDiv.querySelector('.rule-step-type').addEventListener('change', function() {
@@ -2620,12 +2917,108 @@ deleteLangButton.addEventListener('click', () => {
                 }
                 valueContainer.innerHTML = newValueInputHTML;
             });
-            
+
+            // --- Logograph image logic for each step ---
+            if (isLogographic) {
+                const uploadInput = stepDiv.querySelector('.rule-step-logograph-upload');
+                const previewImg = stepDiv.querySelector('.rule-step-logograph-preview');
+                const clearBtn = stepDiv.querySelector('.clear-rule-step-logograph');
+                const drawBtn = stepDiv.querySelector('.draw-rule-step-logograph');
+                const modal = stepDiv.querySelector('.draw-rule-step-logograph-modal');
+                const canvas = stepDiv.querySelector('.rule-step-logograph-canvas');
+                let ctx = null;
+                if (canvas) {
+                    ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.globalAlpha = 1.0;
+                    ctx.fillStyle = 'rgba(0,0,0,0)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    // Set default arrow cursor
+                    canvas.style.cursor = 'default';
+                }
+                // Upload
+                if (uploadInput) {
+                    uploadInput.addEventListener('change', e => {
+                        const file = e.target.files[0];
+                        if (file && file.type === 'image/png') {
+                            const reader = new FileReader();
+                            reader.onload = function(evt) {
+                                const img = new window.Image();
+                                img.onload = function() {
+                                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                                    ctx.globalAlpha = 1.0;
+                                    ctx.fillStyle = 'rgba(0,0,0,0)';
+                                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                    const png = canvas.toDataURL('image/png');
+                                    previewImg.src = png;
+                                    previewImg.style.display = '';
+                                    clearBtn.classList.remove('hidden');
+                                    step.logographImage = png;
+                                };
+                                img.src = evt.target.result;
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    });
+                }
+                // Draw
+                if (drawBtn && modal && canvas) {
+                    drawBtn.addEventListener('click', () => {
+                        modal.classList.remove('hidden');
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.globalAlpha = 1.0;
+                        ctx.fillStyle = 'rgba(0,0,0,0)';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        let drawing = false;
+                        let lastX = 0, lastY = 0;
+                        canvas.onmousedown = e => { drawing = true; lastX = e.offsetX; lastY = e.offsetY; };
+                        canvas.onmouseup = () => { drawing = false; };
+                        canvas.onmouseleave = () => { drawing = false; };
+                        canvas.onmousemove = e => {
+                            if (!drawing) return;
+                            ctx.strokeStyle = '#222';
+                            ctx.lineWidth = 4;
+                            ctx.lineCap = 'round';
+                            ctx.beginPath();
+                            ctx.moveTo(lastX, lastY);
+                            ctx.lineTo(e.offsetX, e.offsetY);
+                            ctx.stroke();
+                            lastX = e.offsetX; lastY = e.offsetY;
+                        };
+                        modal.querySelector('.clear-canvas').onclick = () => {
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                            ctx.fillStyle = 'rgba(0,0,0,0)';
+                            ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        };
+                        modal.querySelector('.save-canvas').onclick = () => {
+                            const png = canvas.toDataURL('image/png');
+                            previewImg.src = png;
+                            previewImg.style.display = '';
+                            clearBtn.classList.remove('hidden');
+                            step.logographImage = png;
+                            modal.classList.add('hidden');
+                        };
+                        modal.querySelector('.cancel-canvas').onclick = () => {
+                            modal.classList.add('hidden');
+                        };
+                    });
+                }
+                // Clear
+                if (clearBtn) {
+                    clearBtn.addEventListener('click', () => {
+                        previewImg.src = '';
+                        previewImg.style.display = 'none';
+                        clearBtn.classList.add('hidden');
+                        step.logographImage = '';
+                    });
+                }
+            }
+
             stepDiv.querySelector('.remove-rule-step-btn').addEventListener('click', function() {
                 const stepItem = this.closest('.rule-step-item');
                 const stepsContainer = stepItem.parentElement;
                 stepItem.remove();
-                
                 // Re-number steps after removal
                 const allStepItems = stepsContainer.querySelectorAll('.rule-step-item');
                 allStepItems.forEach((s, i) => {
@@ -3106,7 +3499,7 @@ deleteLangButton.addEventListener('click', () => {
             stepElements.forEach((stepEl, index) => {
                 if(errorInSteps) return;
                 const stepId = stepEl.dataset.stepId;
-                const order = parseInt(stepEl.dataset.order); // Get order from data attribute
+                const order = parseInt(stepEl.dataset.order);
                 const ruleType = stepEl.querySelector('.rule-step-type').value;
                 let ruleValue = '';
                 if (ruleType === 'conditionalSuffix') {
@@ -3123,11 +3516,20 @@ deleteLangButton.addEventListener('click', () => {
                     if (valueInput) ruleValue = valueInput.value.trim();
                     else console.warn("Could not find .rule-step-value for step:", stepEl);
                 }
+                // --- Logograph image for this step ---
+                let logographImage = '';
+                const isLogographic = currentLanguage.orthography && currentLanguage.orthography.writingSystem === 'logographic';
+                if (isLogographic) {
+                    const previewImg = stepEl.querySelector('.rule-step-logograph-preview');
+                    if (previewImg && previewImg.src && previewImg.src.startsWith('data:image/png')) {
+                        logographImage = previewImg.src;
+                    }
+                }
                  if (ruleType !== 'none' && !ruleValue && !['ablaut', 'infix', 'suppletion'].includes(ruleType) && !(ruleType === 'conditionalSuffix' && ruleValue.split('>')[0] && ruleValue.split('>')[2])) {
                      alert(`ขั้นตอนที่ ${index + 1}: กรุณากรอก "ค่า" สำหรับชนิดกฎ '${ruleType}'`);
                      errorInSteps = true; return;
                  }
-                ruleSteps.push({ id: stepId, order: order, ruleType, ruleValue });
+                ruleSteps.push({ id: stepId, order: order, ruleType, ruleValue, ...(logographImage ? {logographImage} : {}) });
             });
 
             if (errorInSteps) return;
@@ -3353,56 +3755,62 @@ deleteLangButton.addEventListener('click', () => {
                     const manualInflection = wordEntry.manualInflections ? wordEntry.manualInflections[manualInflectionKey] : null;
                     
                     let inflectedPhoneticForm = wordEntry.word; 
-                    let finalOrthographicForm;
+                    let inflectedOrthographicForm; // Will be determined below
                     let isManual = false;
 
-                    if (manualInflection && (manualInflection.phonetic || manualInflection.orthographic) ) { 
-                        inflectedPhoneticForm = manualInflection.phonetic || autoFormatDetailedPhonetics(transliterateWordToSymbols(manualInflection.orthographic, false, true), currentLanguage.phonology); //
-                        finalOrthographicForm = manualInflection.orthographic || getOrthographicForm({word: inflectedPhoneticForm, customOrthography: null}, true, true);
+                    if (manualInflection && manualInflection.phonetic) { 
+                        inflectedPhoneticForm = manualInflection.phonetic;
+                        // For manual overrides, customOrthography field of the manualInflection should be used if present.
+                        // If not, transliterate the manual phonetic form (using first grapheme rule).
+                        inflectedOrthographicForm = manualInflection.orthographic || getOrthographicForm({word: inflectedPhoneticForm, customOrthography: null}, true, true);
                         isManual = true;
                     } else {
                         const rule = currentLanguage.grammar.morphology.conjugationRules.find(r =>
                             (r.partOfSpeech === wordPOS || wordPOS.startsWith(r.partOfSpeech + ":")) && 
                             r.categoryId === cat.id && r.categoryOption === option
                         );
-                        if (rule) {
-                            inflectedPhoneticForm = applyInflectionRuleDefinition(wordEntry.word, rule);
-                            
-                            // Logic for orthographic form based on user request
-                            const isSimpleAffixRule = rule.ruleSteps && rule.ruleSteps.length === 1 && 
-                                                      (rule.ruleSteps[0].ruleType === 'suffix' || rule.ruleSteps[0].ruleType === 'prefix');
-                            const isSuppletionRule = rule.ruleSteps && rule.ruleSteps.length === 1 && rule.ruleSteps[0].ruleType === 'suppletion';
-
-                            if (wordEntry.customOrthography && isSimpleAffixRule) {
-                                const baseOrtho = wordEntry.customOrthography;
-                                const affixPhonemic = rule.ruleSteps[0].ruleValue;
-                                const affixOrtho = transliterateWordToSymbols(affixPhonemic, true, true);
-                                if (rule.ruleSteps[0].ruleType === 'suffix') {
-                                    finalOrthographicForm = baseOrtho + affixOrtho;
-                                } else { // prefix
-                                    finalOrthographicForm = affixOrtho + baseOrtho;
-                                }
-                            } else if (isSuppletionRule) {
-                                const newPhonemicFormSuppletion = rule.ruleSteps[0].ruleValue;
-                                finalOrthographicForm = getOrthographicForm({word: newPhonemicFormSuppletion, customOrthography: null}, true, true);
-                                inflectedPhoneticForm = newPhonemicFormSuppletion; // Ensure phonetic form is updated for suppletion
-                            } else {
-                                // No custom orthography, or complex rule (ablaut, infix, multi-step, conditional)
-                                finalOrthographicForm = getOrthographicForm({word: inflectedPhoneticForm, customOrthography: null}, true, true);
-                            }
+                        if (rule) { // Rule itself contains ruleSteps
+                            inflectedPhoneticForm = applyInflectionRuleDefinition(wordEntry.word, rule); // Use the new function
+                            // For rule-generated forms, use the first grapheme rule for consistency.
+                            inflectedOrthographicForm = getOrthographicForm({word: inflectedPhoneticForm, customOrthography: null}, true, true);
                         } else {
-                            // No rule, no manual override: show base form
-                            inflectedPhoneticForm = wordEntry.word; // Keep base phonemic
-                            finalOrthographicForm = getOrthographicForm(wordEntry, true, true); // Get base orthographic
+                            // No rule, no manual override: show base form, transliterated with first grapheme rule.
+                            inflectedPhoneticForm = wordEntry.word;
+                            inflectedOrthographicForm = getOrthographicForm({word: wordEntry.word, customOrthography: null}, true, true);
                         }
                     }
                     
                     const formattedPhoneticDisplay = autoFormatDetailedPhonetics(inflectedPhoneticForm, currentLanguage.phonology);
                     
+                    let orthoCell = inflectedOrthographicForm;
+                    // ถ้าเป็น logographic: แสดงภาพ logograph หลายรูป (เช่น หลาย step ใน ruleSteps ที่มี logographImage) ใน cell เดียวกัน
+                    const isLogographic = currentLanguage.orthography && currentLanguage.orthography.writingSystem === 'logographic';
+                    let logographImgs = [];
+                    if (isLogographic) {
+                        // 1. manual inflection override for this form (ถ้ามี)
+                        if (manualInflection && manualInflection.logographImage) {
+                            logographImgs.push(manualInflection.logographImage);
+                        } else {
+                            // 2. ดึงภาพคำฐาน (ถ้ามี) เป็นภาพแรก
+                            if (wordEntry.logographImage) {
+                                logographImgs.push(wordEntry.logographImage);
+                            }
+                            // 3. จาก ruleSteps ของ inflection rule (ถ้ามี)
+                            const rule = (currentLanguage.grammar.morphology.conjugationRules||[]).find(r => r.categoryId === cat.id && r.categoryOption === option && r.partOfSpeech === wordPOS);
+                            if (rule && Array.isArray(rule.ruleSteps)) {
+                                rule.ruleSteps.forEach(s => {
+                                    if (s.logographImage) logographImgs.push(s.logographImage);
+                                });
+                            }
+                        }
+                    }
+                    if (isLogographic && logographImgs.length > 0) {
+                        orthoCell = logographImgs.map(img => `<img src="${img}" alt="logograph" style="max-height:2.5rem;max-width:2.5rem;background:transparent;border:none;box-shadow:none;border-radius:0;display:inline-block;margin-right:0.25rem;"/>`).join('');
+                    }
                     tableContent += `<tr class="${categoryBgClass}">
                                     <td class="px-2 py-1">${optIndex === 0 ? cat.name : ''}</td>
-                                    <td class="px-2 py-1">${option} ${isManual ? '<em class="text-xs text-blue-500">(manual)</em>' : ''}</td>
-                                    <td class="px-2 py-1 font-mono">${finalOrthographicForm}</td>
+                                    <td class="px-2 py-1">${option} ${isManual ? '<em class=\"text-xs text-blue-500\">(manual)</em>' : ''}</td>
+                                    <td class="px-2 py-1 font-mono">${orthoCell}</td>
                                     <td class="px-2 py-1 font-mono text-gray-600">${formattedPhoneticDisplay}</td>
                                    </tr>`;
                 });
@@ -3437,7 +3845,7 @@ deleteLangButton.addEventListener('click', () => {
             content += generateWordConjugationModalTableContent(word.id, null); 
             content += `</div>`;
             
-            genericModalTitle.textContent = `การผันคำของ: ${getOrthographicForm(word)}`;
+            genericModalTitle.innerHTML = `การผันคำของ: ${getOrthographicForm(word)}`;
             genericModalContent.innerHTML = content;
             genericModalFooter.innerHTML = `<button id="saveConjugationOverridesBtn" class="btn-primary">บันทึกการแก้ไข</button> <button class="btn-secondary" onclick="closeGenericModal.click()">ปิด</button>`;
             
@@ -3490,64 +3898,65 @@ deleteLangButton.addEventListener('click', () => {
                 cat.options.forEach((option, optIndex) => {
                     const manualInflectionKey = `${cat.id}_${option.replace(/\s+/g, '_')}`;
                     const currentManualOverride = word.manualInflections[manualInflectionKey];
-                    
-                    let ruleBasedPhonetic = word.word; 
-                    let ruleBasedOrthographic = getOrthographicForm(word, true, true); // Default to base word's orthography
 
+                    let ruleBasedPhonetic = word.word;
                     const rule = currentLanguage.grammar.morphology.conjugationRules.find(r =>
-                        (r.partOfSpeech === wordPOS || wordPOS.startsWith(r.partOfSpeech+":")) && 
+                        (r.partOfSpeech === wordPOS || wordPOS.startsWith(r.partOfSpeech+":")) &&
                         r.categoryId === cat.id && r.categoryOption === option
                     );
+                    if (rule) ruleBasedPhonetic = applyInflectionRuleDefinition(word.word, rule);
 
-                    if (rule) {
-                        ruleBasedPhonetic = applyInflectionRuleDefinition(word.word, rule);
-                        
-                        const isSimpleAffixRule = rule.ruleSteps && rule.ruleSteps.length === 1 && 
-                                                  (rule.ruleSteps[0].ruleType === 'suffix' || rule.ruleSteps[0].ruleType === 'prefix');
-                        const isSuppletionRule = rule.ruleSteps && rule.ruleSteps.length === 1 && rule.ruleSteps[0].ruleType === 'suppletion';
+                    // Rule-based orthographic form using the first grapheme rule for consistency.
+                    const ruleBasedOrthographic = getOrthographicForm({word: ruleBasedPhonetic, customOrthography: null}, true, true);
 
-                        if (word.customOrthography && isSimpleAffixRule) {
-                            const baseOrtho = word.customOrthography;
-                            const affixPhonemic = rule.ruleSteps[0].ruleValue;
-                            const affixOrtho = transliterateWordToSymbols(affixPhonemic, true, true);
-                            if (rule.ruleSteps[0].ruleType === 'suffix') {
-                                ruleBasedOrthographic = baseOrtho + affixOrtho;
-                            } else { // prefix
-                                ruleBasedOrthographic = affixOrtho + baseOrtho;
-                            }
-                        } else if (isSuppletionRule) {
-                             const newPhonemicFormSuppletion = rule.ruleSteps[0].ruleValue;
-                             ruleBasedOrthographic = getOrthographicForm({word: newPhonemicFormSuppletion, customOrthography: null}, true, true);
-                             // ruleBasedPhonetic is already correctly set from applyInflectionRuleDefinition
+                    const initialOrthoValue = currentManualOverride?.orthographic || ruleBasedOrthographic;
+                    const initialPhoneticValue = currentManualOverride?.phonetic || ruleBasedPhonetic;
+                    // --- รูปผันเสียง: ให้จุด (.) เป็น span ที่แก้ไขตำแหน่งได้ ---
+                    let displayPhoneticFormatted = autoFormatDetailedPhonetics(initialPhoneticValue, currentLanguage.phonology);
+                    displayPhoneticFormatted = displayPhoneticFormatted.replace(/\./g, '<span class="phon-dot" contenteditable="true" title="คลิกเพื่อแก้ไขตำแหน่งจุด">.</span>');
+
+                    // ถ้าเป็น logographic: แสดงภาพ logograph หลายรูป (คำฐาน+ปัจจัย) ใน cell เดียว
+                    const isLogographic = currentLanguage.orthography && currentLanguage.orthography.writingSystem === 'logographic';
+                    let orthoCell = '';
+                    if (currentLanguage.orthography && currentLanguage.orthography.writingSystem === 'custom' && Array.isArray(currentLanguage.orthography.customSymbols) && currentLanguage.orthography.customSymbols.length > 0) {
+                        // ใช้ transliterateWordToSymbols แบบ returnHtml = true
+                        orthoCell = transliterateWordToSymbols(ruleBasedPhonetic, true, true, true);
+                    } else if (isLogographic) {
+                        let logographImgs = [];
+                        if (currentManualOverride && currentManualOverride.logographImage) {
+                            logographImgs.push(currentManualOverride.logographImage);
                         } else {
-                            ruleBasedOrthographic = getOrthographicForm({word: ruleBasedPhonetic, customOrthography: null}, true, true);
+                            if (word.logographImage) {
+                                logographImgs.push(word.logographImage);
+                            }
+                            if (rule && Array.isArray(rule.ruleSteps)) {
+                                rule.ruleSteps.forEach(s => {
+                                    if (s.logographImage) logographImgs.push(s.logographImage);
+                                });
+                            }
                         }
+                        if (logographImgs.length > 0) {
+                            orthoCell = logographImgs.map(img => `<img src="${img}" alt="logograph" style="max-height:2.5rem;max-width:2.5rem;background:transparent;border:none;box-shadow:none;border-radius:0;display:inline-block;margin-right:0.25rem;"/>`).join('');
+                        }
+                    } else {
+                        orthoCell = `<input type=\"text\" class=\"w-full p-0.5 border rounded text-xs font-mono manual-ortho-input\" data-key=\"${manualInflectionKey}\" value=\"${initialOrthoValue}\" ${!currentManualOverride ? 'disabled' : ''}>`;
                     }
-                    // If no rule, ruleBasedPhonetic and ruleBasedOrthographic remain as the base word forms.
-                    
-                   const initialOrthoValue = currentManualOverride?.orthographic || ruleBasedOrthographic;
-                    const initialPhoneticValue = currentManualOverride?.phonetic || ruleBasedPhonetic; 
-                    const displayPhoneticFormatted = autoFormatDetailedPhonetics(initialPhoneticValue, currentLanguage.phonology); 
-
-
                     tableContent += `<tr class="${categoryBgClass}">
-                                    <td class="px-2 py-1 ${optIndex === 0 ? 'font-semibold text-purple-700' : ''}">${optIndex === 0 ? cat.name : ''}</td>
-                                    <td class="px-2 py-1">${option}</td>
-                                    <td class="px-2 py-1">
-                                        <input type="checkbox" class="manual-override-chk h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500" data-key="${manualInflectionKey}" ${currentManualOverride ? 'checked' : ''} 
-                                               onchange="toggleManualInflectionInputs(this, '${manualInflectionKey}', '${ruleBasedOrthographic}', '${ruleBasedPhonetic}', ${wordId})">
-                                    </td>
-                                    <td class="px-2 py-1">
-                                        <input type="text" class="w-full p-0.5 border rounded text-xs font-mono manual-ortho-input" data-key="${manualInflectionKey}" 
-                                               value="${initialOrthoValue}" ${!currentManualOverride ? 'disabled' : ''}>
-                                    </td>
-                                    <td class="px-2 py-1">
-                                         <input type="text" class="w-full p-0.5 border rounded text-xs font-mono manual-phonetic-input" data-key="${manualInflectionKey}" 
-                                               value="${initialPhoneticValue}" ${!currentManualOverride ? 'disabled' : ''} 
-                                               placeholder="รูปเสียง (ดิบ)" oninput="updateFormattedPhoneticDisplay(this, '${manualInflectionKey}')">
-                                         <span class="text-xs text-gray-500 manual-phonetic-display" data-key="${manualInflectionKey}">${displayPhoneticFormatted}</span>
-                                    </td>
-                               </tr>`;
+                        <td class="px-2 py-1 ${optIndex === 0 ? 'font-semibold text-purple-700' : ''}">${optIndex === 0 ? cat.name : ''}</td>
+                        <td class="px-2 py-1">${option}</td>
+                        <td class="px-2 py-1">
+                            <input type="checkbox" class="manual-override-chk h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500" data-key="${manualInflectionKey}" ${currentManualOverride ? 'checked' : ''} 
+                                   onchange="toggleManualInflectionInputs(this, '${manualInflectionKey}', '${ruleBasedOrthographic}', '${ruleBasedPhonetic}', ${wordId})">
+                        </td>
+                        <td class="px-2 py-1 font-mono">${orthoCell}</td>
+                        <td class="px-2 py-1">
+                            <input type="text" class="w-full p-0.5 border rounded text-xs font-mono manual-phonetic-input" data-key="${manualInflectionKey}" 
+                                   value="${initialPhoneticValue}" ${!currentManualOverride ? 'disabled' : ''} 
+                                   placeholder="รูปเสียง (ดิบ)" oninput="updateFormattedPhoneticDisplay(this, '${manualInflectionKey}')">
+                            <span class="text-xs text-gray-500 manual-phonetic-display" data-key="${manualInflectionKey}" contenteditable="true" spellcheck="false" title="สามารถแก้ไขตัวอักษรและตำแหน่งจุดได้โดยตรง">${displayPhoneticFormatted}</span>
+                        </td>
+                    </tr>`;
+// (manual-phonetic-display is now fully editable; .phon-dot event delegation removed)
                 });
                 categoryColorIndex++;
             });
@@ -3592,18 +4001,39 @@ deleteLangButton.addEventListener('click', () => {
 
             genericModalContent.querySelectorAll('.manual-override-chk').forEach(chk => {
                 const key = chk.dataset.key;
-                if (chk.checked) { 
+                if (chk.checked) {
                     const orthoInput = genericModalContent.querySelector(`.manual-ortho-input[data-key="${key}"]`);
                     const phoneticInput = genericModalContent.querySelector(`.manual-phonetic-input[data-key="${key}"]`);
+                    let phoneticVal = phoneticInput.value;
+                    // ถ้ามี .phon-dot ใน manual-phonetic-display ให้ดึงตำแหน่งจุดจาก span
+                    const phoneticDisplay = genericModalContent.querySelector(`.manual-phonetic-display[data-key="${key}"]`);
+                    if (phoneticDisplay && phoneticDisplay.querySelector('.phon-dot')) {
+                        // สร้าง string ใหม่จาก innerText ของ phoneticDisplay (จะรวมจุดที่ผู้ใช้แก้ไข)
+                        phoneticVal = '';
+                        phoneticDisplay.childNodes.forEach(node => {
+                            if (node.nodeType === Node.TEXT_NODE) {
+                                phoneticVal += node.textContent;
+                            } else if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('phon-dot')) {
+                                phoneticVal += '.';
+                            }
+                        });
+                    }
                     word.manualInflections[key] = {
                         orthographic: orthoInput.value.trim(),
-                        phonetic: phoneticInput.value.trim() 
+                        phonetic: phoneticVal.trim()
                     };
-                } else { 
-                    delete word.manualInflections[key]; 
+                } else {
+                    delete word.manualInflections[key];
                 }
             });
             saveData();
+            // รีเฟรชตารางใน modal ทันทีหลังบันทึก
+            const tableContainer = document.getElementById('wordConjugationModalTableContainer');
+            if (tableContainer) {
+                const filterSelect = document.getElementById('conjModalCategoryFilter');
+                const selectedCategoryIds = filterSelect ? Array.from(filterSelect.selectedOptions).map(opt => opt.value) : null;
+                tableContainer.innerHTML = generateWordConjugationModalTableContent(wordId, selectedCategoryIds);
+            }
             if (activeTab === 'dictionary') {
                  const searchInputEl = document.querySelector('#dictionaryTabSpecificContent input[type="text"][id^="dictionarySearch_"]');
                  const currentSearchTerm = searchInputEl ? searchInputEl.value.trim().toLowerCase() : "";
@@ -3626,6 +4056,57 @@ deleteLangButton.addEventListener('click', () => {
 
 
         function renderDictionaryUI(container) {
+            // --- ปุ่ม Export Excel ---
+            const exportRow = document.createElement('div');
+            exportRow.className = 'flex justify-end mb-4';
+            const exportBtn = document.createElement('button');
+            exportBtn.type = 'button';
+            exportBtn.className = 'px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 transition-colors flex items-center gap-2 shadow';
+            exportBtn.innerHTML = '<i class="fas fa-file-excel"></i> Export Excel (.xlsx)';
+            exportBtn.onclick = exportLexiconToExcel;
+            exportRow.appendChild(exportBtn);
+            container.appendChild(exportRow);
+
+            // ...existing code for rendering dictionary UI...
+        // --- Export Lexicon to Excel (.xlsx) ---
+        function exportLexiconToExcel() {
+            // Check if XLSX is loaded, if not, load from CDN then call again
+            if (typeof window.XLSX === 'undefined') {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+                script.onload = exportLexiconToExcel;
+                document.body.appendChild(script);
+                return;
+            }
+            // Prepare data
+            const lexicon = currentLanguage.lexicon || [];
+            if (!lexicon.length) {
+                alert('ไม่มีข้อมูลคำศัพท์ในพจนานุกรม');
+                return;
+            }
+            // Map to flat array of objects for Excel
+            const data = lexicon.map(w => ({
+                'ลำดับ': w.id || '',
+                'คำศัพท์': w.word || '',
+                'สัทอักษร': w.phonetics || '',
+                'ความหมาย': w.meaning || '',
+                'ชนิดคำ': w.partOfSpeech || '',
+                'เพศ': w.gender || '',
+                'อักขรวิธี': w.customOrthography || '',
+                'รากศัพท์': (w.etymology && w.etymology.roots && w.etymology.roots.length) ? w.etymology.roots.join(', ') : '',
+                'หมายเหตุรากศัพท์': (w.etymology && w.etymology.notes) ? w.etymology.notes : '',
+                'รูปผัน/คำย่อย': (w.manualInflections && Object.keys(w.manualInflections).length) ? JSON.stringify(w.manualInflections) : '',
+                'ไทม์ไลน์วิวัฒนาการ': (w.evolutionTimeline && w.evolutionTimeline.length) ? JSON.stringify(w.evolutionTimeline) : '',
+                'รูปถิ่น': (w.dialectalForms && w.dialectalForms.length) ? JSON.stringify(w.dialectalForms) : ''
+            }));
+            // Create worksheet and workbook
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Lexicon');
+            // Download
+            const langName = currentLanguage.name ? currentLanguage.name.replace(/[^a-zA-Z0-9ก-๙]/g, '_') : 'lexicon';
+            XLSX.writeFile(wb, `${langName}_lexicon.xlsx`);
+        }
             currentLanguage.lexicon = currentLanguage.lexicon || [];
             const dictContainerId = 'dictionaryTabSpecificContent';
             let dictContainer = container.querySelector(`#${dictContainerId}`);
@@ -3743,9 +4224,11 @@ deleteLangButton.addEventListener('click', () => {
 
             const table = document.createElement('table');
             table.className = 'min-w-full divide-y divide-yellow-300 bg-white shadow-sm rounded-lg';
+            const isLogographic = currentLanguage.orthography && currentLanguage.orthography.writingSystem === 'logographic';
             table.innerHTML = `
                 <thead class="bg-yellow-100">
                     <tr>
+                        ${isLogographic ? '<th class="px-4 py-2 text-left text-xs font-medium text-yellow-700 uppercase tracking-wider">คำศัพท์ (ภาพ)</th>' : ''}
                         <th class="px-4 py-2 text-left text-xs font-medium text-yellow-700 uppercase tracking-wider">คำศัพท์ (อักขรวิธี)</th>
                         <th class="px-4 py-2 text-left text-xs font-medium text-yellow-700 uppercase tracking-wider">คำศัพท์ (รูปฐานเสียง)</th>
                         <th class="px-4 py-2 text-left text-xs font-medium text-yellow-700 uppercase tracking-wider">การออกเสียง (ละเอียด)</th>
@@ -3760,9 +4243,13 @@ deleteLangButton.addEventListener('click', () => {
             const tbody = table.querySelector('tbody');
             lexiconSubset.forEach(entry => {
                 const row = tbody.insertRow();
-                const displayWord = getOrthographicForm(entry); 
-                row.innerHTML = `
-                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700 font-semibold"><a href="#" class="text-purple-600 hover:underline" onclick="event.preventDefault(); showWordDetailPopup(${entry.id})">${displayWord}</a></td>
+                const displayWord = getOrthographicForm(entry);
+                let cells = '';
+                if (isLogographic) {
+                    cells += `<td class="px-4 py-2 whitespace-nowrap">${entry.logographImage ? `<a href=\"#\" onclick=\"event.preventDefault(); showWordDetailPopup(${entry.id})\"><img src=\"${entry.logographImage}\" alt=\"logograph\" style=\"max-height:3rem;max-width:3rem;background:transparent;border:none;box-shadow:none;border-radius:0;\"/></a>` : ''}</td>`;
+                }
+                cells += `
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700 font-semibold">${isLogographic ? displayWord : `<a href=\"#\" class=\"text-purple-600 hover:underline\" onclick=\"event.preventDefault(); showWordDetailPopup(${entry.id})\">${displayWord}</a>`}</td>
                     <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500 font-mono">${entry.word}</td>
                     <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500 font-mono">${entry.phonetics || 'N/A'}</td>
                     <td class="px-4 py-2 text-sm text-gray-700">${entry.meaning}</td>
@@ -3774,6 +4261,7 @@ deleteLangButton.addEventListener('click', () => {
                         <button class="text-red-500 hover:text-red-700" title="ลบ" onclick="deleteWordFromDictionary(${entry.id})"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
+                row.innerHTML = cells;
             });
             container.appendChild(table);
             container.innerHTML += `<p class="text-xs text-gray-400 mt-1">แสดง ${lexiconSubset.length} จาก ${currentLanguage.lexicon.length} คำ</p>`;
@@ -3809,8 +4297,15 @@ deleteLangButton.addEventListener('click', () => {
             const word = (currentLanguage.lexicon || []).find(w => w.id === wordId);
             if (!word) return;
         
-            wordDetailTitle.textContent = getOrthographicForm(word);
+            wordDetailTitle.innerHTML = getOrthographicForm(word);
             let contentHtml = '';
+            // Show logograph image at the top if in logographic mode and image exists
+            const isLogographic = currentLanguage.orthography && currentLanguage.orthography.writingSystem === 'logographic';
+            if (isLogographic && word.logographImage) {
+                contentHtml += `<div style="display:flex;justify-content:center;align-items:center;margin-bottom:1rem;padding:0.5rem 0;background:none !important;border:none !important;box-shadow:none !important;">
+                  <img src="${word.logographImage}" alt="logograph" style="display:block;max-height:5rem;max-width:5rem;background:transparent !important;background-color:transparent !important;border:none !important;box-shadow:none !important;outline:none !important;border-radius:0 !important;padding:0;"/>
+                </div>`;
+            }
             const fields = [
                 { label: 'คำศัพท์ (อักขรวิธี)', value: getOrthographicForm(word) },
                 { label: 'รูปคำฐาน (Base Phonemic Form)', value: word.word },
@@ -3825,7 +4320,6 @@ deleteLangButton.addEventListener('click', () => {
                 { label: 'ตัวอย่างประโยค (Example)', value: word.example },
                 { label: 'คำไวพจน์ (Synonyms)', value: word.synonyms ? word.synonyms.join(', ') : null }
             );
-        
             fields.forEach(field => {
                 if (field.value && field.value.toString().trim() !== '') {
                     contentHtml += `<div class="word-detail-popup-field"><strong class="text-purple-600">${field.label}:</strong> ${field.value}</div>`;
@@ -3900,6 +4394,33 @@ deleteLangButton.addEventListener('click', () => {
             }
             wordDetailModal.classList.add('hidden');
         };
+
+// Modal สำหรับจัดการวิวัฒนาการคำ (Evolution)
+window.openEvolutionModalForWord = (wordId) => {
+    genericModalTitle.textContent = 'จัดการวิวัฒนาการคำ';
+    // เตรียม container ชั่วคราวสำหรับ evolution UI
+    const tempDiv = document.createElement('div');
+    tempDiv.id = 'evolutionModalContentContainer';
+    tempDiv.className = 'max-h-[70vh] overflow-y-auto';
+    // render evolution UI เฉพาะคำนั้น (แต่ให้เลือก/แก้ไขได้ทุกคำ)
+    renderEvolutionUI(tempDiv);
+    genericModalContent.innerHTML = '';
+    genericModalContent.appendChild(tempDiv);
+    genericModalFooter.innerHTML = `<button class="btn-secondary" onclick="closeGenericModal.click()">ปิด</button>`;
+    wordDetailModal.classList.add('hidden');
+    genericModal.classList.remove('hidden');
+    // Autofill คำที่เลือก (ใช้ id ใหม่ของ input)
+    setTimeout(() => {
+        const word = currentLanguage.lexicon.find(w => w.id === wordId);
+        if (word) {
+            const evoInput = document.getElementById('evoBaseWordInput');
+            if (evoInput) {
+                evoInput.value = word.word;
+                evoInput.dispatchEvent(new Event('input'));
+            }
+        }
+    }, 100);
+};
 
         function autoFormatDetailedPhonetics(basePhonemicForm, phonologyData) {
             if (!basePhonemicForm || !phonologyData) return `/${basePhonemicForm || ''}/`;
@@ -4051,13 +4572,22 @@ deleteLangButton.addEventListener('click', () => {
                 });
             }
 
+            // Detect if logographic system is selected
+            const isLogographic = currentLanguage.orthography && currentLanguage.orthography.writingSystem === 'logographic';
+            let logographImage = existingWord && existingWord.logographImage ? existingWord.logographImage : '';
             modal.innerHTML = `
                 <div class="modal-content p-6 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                     <h3 class="text-xl font-bold mb-4">${existingWord ? 'แก้ไขคำศัพท์: ' + getOrthographicForm(existingWord) : 'เพิ่มคำศัพท์ใหม่'}</h3>
                     <p class="text-xs text-gray-500 mb-2">รูปคำศัพท์ (รูปฐาน) ควรเป็นรูปเสียงสุดท้ายหลังใช้กฎ Active Sound Changes และรวมเสียงวรรณยุกต์แล้ว (ถ้ามี)</p>
                     <div class="space-y-3">
                         <div><label class="block text-sm font-medium">คำศัพท์ (รูปฐานเสียง):</label><input type="text" id="modalWord" value="${initialWordValue}" class="w-full p-2 border rounded-md font-mono"></div>
-                        <div><label class="block text-sm font-medium">คำศัพท์ (อักขรวิธี - กำหนดเอง ถ้าต้องการ):</label><input type="text" id="modalCustomOrthography" value="${initialCustomOrthography}" class="w-full p-2 border rounded-md font-mono" placeholder="ปล่อยว่างเพื่อใช้กฎอัตโนมัติ"></div>
+                        <div>
+                            <label class="block text-sm font-medium">คำศัพท์ (อักขรวิธี - กำหนดเอง ถ้าต้องการ):</label>
+                            <div class="relative">
+                                <input type="text" id="modalCustomOrthography" value="${initialCustomOrthography}" class="w-full p-2 border rounded-md font-mono pr-32" placeholder="ปล่อยว่างเพื่อใช้กฎอัตโนมัติ">
+                                <span id="modalOrthographyPreview" class="absolute right-2 top-1/2 -translate-y-1/2 text-purple-700 font-semibold bg-white/80 px-2 rounded pointer-events-none select-none text-sm max-w-[30%] truncate" style="direction: ltr;"></span>
+                            </div>
+                        </div>
                         <div><label class="block text-sm font-medium">การออกเสียง (Phonetics - รูปแบบละเอียด):</label><input type="text" id="modalPhonetics" value="${initialPhonetics}" class="w-full p-2 border rounded-md font-mono" placeholder="/พยางค์1.พยางค์2/"></div>
                         <div><label class="block text-sm font-medium">ความหมาย:</label><input type="text" id="modalMeaning" value="${initialMeaning}" class="w-full p-2 border rounded-md"></div>
                         <div>
@@ -4077,23 +4607,193 @@ deleteLangButton.addEventListener('click', () => {
                             <button id="addEtymologyRootModalBtn" class="text-xs btn-secondary bg-purple-400 hover:bg-purple-500 px-2 py-1 rounded-md">เพิ่มรากศัพท์</button>
                             <div class="mt-2"><label class="block text-sm font-medium">หมายเหตุศัพทมูลวิทยา:</label><textarea id="modalEtymologyNotes" class="w-full p-2 border rounded-md">${initialEtymologyNotes}</textarea></div>
                         </div>
+                        ${isLogographic ? `
+                        <div id="logographImageSection" class="border rounded p-3 bg-gray-50">
+                            <label class="block text-sm font-medium mb-1">อักษรภาพ (Logograph):</label>
+                            <div class="flex flex-col gap-2">
+                                <input type="file" id="logographImageInput" accept="image/png" class="mb-2">
+                                <button id="drawLogographBtn" class="btn-secondary w-fit">วาดภาพคำ (Draw)</button>
+                                <div id="logographImagePreviewContainer" class="mt-2">
+                                    ${logographImage ? `<img id='logographImagePreview' src='${logographImage}' alt='Logograph' class='max-h-32 border rounded mb-2'>` : `<img id='logographImagePreview' src='' alt='Logograph' class='max-h-32 border rounded mb-2 hidden'>`}
+                                </div>
+                                <button id="clearLogographImageBtn" class="btn-secondary bg-red-400 hover:bg-red-500 text-white w-fit ${logographImage ? '' : 'hidden'}">ลบภาพ</button>
+                            </div>
+                        </div>
+                        <div id="drawLogographModal" class="fixed inset-0 z-[80] flex items-center justify-center modal hidden p-4">
+                            <div class="modal-content p-4 rounded-lg shadow-xl w-full max-w-md">
+                                <h4 class="text-lg font-bold mb-2">วาดอักษรภาพ</h4>
+                                <canvas id="logographCanvas" width="256" height="256" class="border bg-white mb-2"></canvas>
+                                <div class="flex gap-2 mb-2">
+                                    <button id="clearCanvasBtn" class="btn-secondary">ลบทั้งหมด</button>
+                                    <button id="saveCanvasBtn" class="btn-primary">บันทึกภาพ</button>
+                                    <button id="cancelCanvasBtn" class="btn-secondary">ยกเลิก</button>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
                     </div>
                     <div class="mt-6 flex justify-end space-x-3">
                         <button id="cancelWordModalBtn" class="btn-secondary bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md">ยกเลิก</button>
                         <button id="saveWordModalBtn" class="btn-primary px-4 py-2 rounded-md">${existingWord ? 'บันทึกการเปลี่ยนแปลง' : 'เพิ่มคำศัพท์'}</button>
                     </div>
                 </div>`;
+            // --- Logograph image logic ---
+            if (isLogographic) {
+                const logographImageInput = modal.querySelector('#logographImageInput');
+                const logographImagePreview = modal.querySelector('#logographImagePreview');
+                const logographImagePreviewContainer = modal.querySelector('#logographImagePreviewContainer');
+                const clearLogographImageBtn = modal.querySelector('#clearLogographImageBtn');
+                const drawLogographBtn = modal.querySelector('#drawLogographBtn');
+                const drawLogographModal = modal.querySelector('#drawLogographModal');
+                const logographCanvas = modal.querySelector('#logographCanvas');
+                let drawing = false;
+                let ctx = null;
+                if (logographCanvas) {
+                    ctx = logographCanvas.getContext('2d');
+                    ctx.clearRect(0, 0, logographCanvas.width, logographCanvas.height);
+                    ctx.globalAlpha = 1.0;
+                    ctx.fillStyle = 'rgba(0,0,0,0)';
+                    ctx.fillRect(0, 0, logographCanvas.width, logographCanvas.height);
+                }
+                // Upload image
+                if (logographImageInput) {
+                    logographImageInput.addEventListener('change', e => {
+                        const file = e.target.files[0];
+                        if (file && file.type === 'image/png') {
+                            const reader = new FileReader();
+                            reader.onload = function(evt) {
+                                // Always draw uploaded image onto a transparent canvas, then export as PNG
+                                const img = new window.Image();
+                                img.onload = function() {
+                                    ctx.clearRect(0, 0, logographCanvas.width, logographCanvas.height);
+                                    ctx.globalAlpha = 1.0;
+                                    ctx.fillStyle = 'rgba(0,0,0,0)';
+                                    ctx.fillRect(0, 0, logographCanvas.width, logographCanvas.height);
+                                    ctx.drawImage(img, 0, 0, logographCanvas.width, logographCanvas.height);
+                                    logographImage = logographCanvas.toDataURL('image/png');
+                                    logographImagePreview.src = logographImage;
+                                    logographImagePreview.classList.remove('hidden');
+                                    clearLogographImageBtn.classList.remove('hidden');
+                                };
+                                img.src = evt.target.result;
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    });
+                }
+                // Draw image
+                if (drawLogographBtn && drawLogographModal && logographCanvas) {
+                    drawLogographBtn.addEventListener('click', () => {
+                        drawLogographModal.classList.remove('hidden');
+                        // Reset canvas with transparent background
+                        ctx.clearRect(0, 0, logographCanvas.width, logographCanvas.height);
+                        ctx.globalAlpha = 1.0;
+                        ctx.fillStyle = 'rgba(0,0,0,0)';
+                        ctx.fillRect(0, 0, logographCanvas.width, logographCanvas.height);
+                        if (logographImage) {
+                            const img = new window.Image();
+                            img.onload = function() {
+                                ctx.drawImage(img, 0, 0, logographCanvas.width, logographCanvas.height);
+                            };
+                            img.src = logographImage;
+                        }
+                    });
+                    // Drawing logic
+                    let lastX = 0, lastY = 0;
+                    logographCanvas.addEventListener('mousedown', e => {
+                        drawing = true;
+                        const rect = logographCanvas.getBoundingClientRect();
+                        lastX = e.clientX - rect.left;
+                        lastY = e.clientY - rect.top;
+                    });
+                    logographCanvas.addEventListener('mousemove', e => {
+                        if (!drawing) return;
+                        const rect = logographCanvas.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const y = e.clientY - rect.top;
+                        ctx.strokeStyle = '#000';
+                        ctx.lineWidth = 3;
+                        ctx.lineCap = 'round';
+                        ctx.beginPath();
+                        ctx.moveTo(lastX, lastY);
+                        ctx.lineTo(x, y);
+                        ctx.stroke();
+                        lastX = x;
+                        lastY = y;
+                    });
+                    logographCanvas.addEventListener('mouseup', () => { drawing = false; });
+                    logographCanvas.addEventListener('mouseleave', () => { drawing = false; });
+                    // Clear canvas
+                    drawLogographModal.querySelector('#clearCanvasBtn').addEventListener('click', () => {
+                        ctx.clearRect(0, 0, logographCanvas.width, logographCanvas.height);
+                        ctx.globalAlpha = 1.0;
+                        ctx.fillStyle = 'rgba(0,0,0,0)';
+                        ctx.fillRect(0, 0, logographCanvas.width, logographCanvas.height);
+                    });
+                    // Save canvas
+                    drawLogographModal.querySelector('#saveCanvasBtn').addEventListener('click', () => {
+                        logographImage = logographCanvas.toDataURL('image/png');
+                        logographImagePreview.src = logographImage;
+                        logographImagePreview.classList.remove('hidden');
+                        clearLogographImageBtn.classList.remove('hidden');
+                        drawLogographModal.classList.add('hidden');
+                    });
+                    // Cancel drawing
+                    drawLogographModal.querySelector('#cancelCanvasBtn').addEventListener('click', () => {
+                        drawLogographModal.classList.add('hidden');
+                    });
+                }
+                // Clear image
+                if (clearLogographImageBtn) {
+                    clearLogographImageBtn.addEventListener('click', () => {
+                        logographImage = '';
+                        logographImagePreview.src = '';
+                        logographImagePreview.classList.add('hidden');
+                        clearLogographImageBtn.classList.add('hidden');
+                    });
+                }
+            }
             document.body.appendChild(modal);
 
             const modalWordInput = modal.querySelector('#modalWord');
             const modalPhoneticsInput = modal.querySelector('#modalPhonetics');
             const modalCustomOrthographyInput = modal.querySelector('#modalCustomOrthography');
+            const modalOrthographyPreview = modal.querySelector('#modalOrthographyPreview');
 
+            // ฟังก์ชันอัปเดตตัวอย่างอักขรวิธี
+            function updateOrthographyPreview() {
+                if (currentLanguage.orthography && currentLanguage.orthography.writingSystem === 'custom') {
+                    // แสดง preview เป็น HTML (image/symbol) เท่านั้น
+                    const basePhonemic = modalWordInput.value;
+                    const html = transliterateWordToSymbols(basePhonemic, true, true, true);
+                    modalOrthographyPreview.innerHTML = html;
+                    modalOrthographyPreview.title = basePhonemic;
+                    modalOrthographyPreview.style.display = html ? '' : 'none';
+                    return;
+                }
+                const custom = modalCustomOrthographyInput.value.trim();
+                let preview = '';
+                if (custom) {
+                    preview = custom;
+                } else {
+                    // ใช้กฎอัตโนมัติจากค่าคำศัพท์ (รูปฐานเสียง)
+                    const basePhonemic = modalWordInput.value;
+                    preview = getOrthographicForm({ word: basePhonemic, customOrthography: '' }, true, false);
+                }
+                modalOrthographyPreview.textContent = preview;
+                modalOrthographyPreview.title = preview;
+                modalOrthographyPreview.style.display = '';
+            }
+            updateOrthographyPreview();
+            modalCustomOrthographyInput.addEventListener('input', updateOrthographyPreview);
+            modalWordInput.addEventListener('input', updateOrthographyPreview);
+
+            // อัปเดต phonetics อัตโนมัติเมื่อแก้ไขรูปฐานเสียง
             const updateDerivedForms = () => {
                 const basePhonemic = modalWordInput.value;
                 modalPhoneticsInput.value = autoFormatDetailedPhonetics(basePhonemic, currentLanguage.phonology);
+                updateOrthographyPreview();
             };
-            modalWordInput.addEventListener('input', updateDerivedForms);
             modalWordInput.addEventListener('change', updateDerivedForms);
 
 
@@ -4113,8 +4813,10 @@ deleteLangButton.addEventListener('click', () => {
                 const wordOptionsForRootDatalistId = `wordRootDatalist_${Date.now()}`;
                 let datalistOptions = '';
                 currentLanguage.lexicon.forEach(w => { 
-                     if (!existingWord || w.id !== existingWord.id) { 
-                         datalistOptions += `<option value="${w.word}" data-id="${w.id}">${getOrthographicForm(w)} (${w.meaning})</option>`;
+                     if (!existingWord || w.id !== existingWord.id) {
+                         let ortho = getOrthographicForm(w, false, false);
+                         let base = w.word;
+                         datalistOptions += `<option value="${ortho}" data-id="${w.id}">${ortho} (${base})</option>`;
                      }
                 });
                 etymologyRootsContainerModal.innerHTML += `<datalist id="${wordOptionsForRootDatalistId}">${datalistOptions}</datalist>`;
@@ -4193,7 +4895,8 @@ deleteLangButton.addEventListener('click', () => {
                         notes: modal.querySelector('#modalEtymologyNotes').value.trim()
                     },
                     evolutionTimeline: (existingWord && existingWord.evolutionTimeline) ? existingWord.evolutionTimeline : [], 
-                    dialectalForms: (existingWord && existingWord.dialectalForms) ? existingWord.dialectalForms : [] 
+                    dialectalForms: (existingWord && existingWord.dialectalForms) ? existingWord.dialectalForms : [],
+                    ...(isLogographic ? { logographImage: logographImage || '' } : {})
                 };
 
                 if (!updatedWord.word || !updatedWord.meaning || !updatedWord.partOfSpeech) {
@@ -4207,9 +4910,18 @@ deleteLangButton.addEventListener('click', () => {
                     currentLanguage.lexicon.push(updatedWord);
                     nextWordId = calculateNextWordId(currentLanguage.lexicon); 
                 }
+                // Immediately update the UI to show the edited/added word
                 modal.remove();
-                if (activeTab === 'dictionary') renderDictionaryUI(tabContentContainer);
-                else if (activeTab === 'etymology') renderEtymologyUI(tabContentContainer); 
+                // Ensure tabContentContainer is up-to-date
+                let container = tabContentContainer;
+                if (!container || !document.body.contains(container)) {
+                    container = document.getElementById('tabContentContainer') || document.querySelector('.tab-content') || document.body;
+                }
+                if (activeTab === 'dictionary') {
+                    renderDictionaryUI(container);
+                } else if (activeTab === 'etymology') {
+                    renderEtymologyUI(container);
+                }
                 saveData();
             };
         };
@@ -4261,6 +4973,106 @@ deleteLangButton.addEventListener('click', () => {
             ortho.customSymbols = ortho.customSymbols || [];
             ortho.displayTonesInOrthography = ortho.displayTonesInOrthography === undefined ? true : ortho.displayTonesInOrthography;
 
+            // ...existing code...
+        // ...existing code...
+            // --- วรรณยุกต์ใน modal สร้าง/แก้ไขคำศัพท์ ---
+            // เพิ่ม dropdown เลือกวรรณยุกต์ (ถ้ามีวรรณยุกต์)
+            if (currentLanguage.phonology.hasTones) {
+                // แยกพยางค์จาก modalWordInput แล้วสร้าง dropdown สำหรับแต่ละพยางค์
+                const wordInputDiv = modal.querySelector('#modalWord').parentElement;
+                const toneDropdownDiv = document.createElement('div');
+                toneDropdownDiv.className = 'flex flex-wrap gap-2 mt-1';
+                toneDropdownDiv.id = 'toneDropdownsContainer';
+                wordInputDiv.appendChild(toneDropdownDiv);
+
+                function getSyllables() {
+                    return modalWordInput.value.trim().split(/\.|\s+/).filter(Boolean);
+                }
+                function renderToneDropdowns() {
+                    const syllables = getSyllables();
+                    toneDropdownDiv.innerHTML = '';
+                    if (!modal._syllableTones || modal._syllableTones.length !== syllables.length) {
+                        modal._syllableTones = Array(syllables.length).fill(0);
+                    }
+                    syllables.forEach((syll, idx) => {
+                        const sel = document.createElement('select');
+                        sel.className = 'p-1 border rounded text-xs';
+                        currentLanguage.phonology.tones.forEach(tone => {
+                            sel.innerHTML += `<option value="${tone.number}" ${modal._syllableTones[idx]===tone.number?'selected':''}>${tone.name}${tone.number!==0?(' ('+(tone.representation||tone.display||tone.number)+')'):''}</option>`;
+                        });
+                        sel.onchange = (e) => {
+                            modal._syllableTones[idx] = parseInt(e.target.value);
+                            updateWordToneDisplay();
+                        };
+                        // ใส่ label พยางค์ + dropdown
+                        const label = document.createElement('span');
+                        label.className = 'font-mono';
+                        label.textContent = syll;
+                        toneDropdownDiv.appendChild(label);
+                        toneDropdownDiv.appendChild(sel);
+                    });
+                }
+
+                function updateWordToneDisplay() {
+                    // แสดงผลใน preview (เช่น co²laneto⁴) ด้วยเลขยกกำลัง ถ้าเลือกแสดงวรรณยุกต์ในอักขรวิธีเท่านั้น
+                    const syllables = getSyllables();
+                    let display = '';
+                    // ตรวจสอบค่าจาก checkbox ใน orthography (displayTonesInOrthography)
+                    let showTone = true;
+                    const ortho = currentLanguage.orthography;
+                    if (typeof ortho.displayTonesInOrthography !== 'undefined') {
+                        showTone = ortho.displayTonesInOrthography;
+                    }
+                    syllables.forEach((syll, idx) => {
+                        const toneNum = (modal._syllableTones||[])[idx]||0;
+                        const toneObj = currentLanguage.phonology.tones.find(t=>t.number===toneNum);
+                        display += syll;
+                        if (showTone && toneObj && toneObj.number!==0) {
+                            display += `<sup>${toneObj.representation||toneObj.display||toneObj.number}</sup>`;
+                        }
+                    });
+                    // แสดงผลเป็น HTML (superscript)
+                    let previewDiv = modal.querySelector('#modalWordTonePreview');
+                    if (!previewDiv) {
+                        previewDiv = document.createElement('div');
+                        previewDiv.id = 'modalWordTonePreview';
+                        previewDiv.className = 'text-purple-700 font-mono text-lg mt-1';
+                        modalWordInput.parentElement.appendChild(previewDiv);
+                    }
+                    previewDiv.innerHTML = display;
+                }
+
+                modalWordInput.addEventListener('input', () => {
+                    renderToneDropdowns();
+                    updateWordToneDisplay();
+                });
+                renderToneDropdowns();
+                updateWordToneDisplay();
+                // เมื่อบันทึก ให้รวมวรรณยุกต์เข้า word
+                const saveBtn = modal.querySelector('#saveWordModalBtn');
+                const origSaveHandler = saveBtn.onclick;
+                saveBtn.onclick = () => {
+                    // รวมวรรณยุกต์เข้า word เฉพาะถ้าเลือกแสดงวรรณยุกต์ในอักขรวิธี
+                    const syllables = getSyllables();
+                    let wordWithTone = '';
+                    let showTone = true;
+                    const ortho = currentLanguage.orthography;
+                    if (typeof ortho.displayTonesInOrthography !== 'undefined') {
+                        showTone = ortho.displayTonesInOrthography;
+                    }
+                    syllables.forEach((syll, idx) => {
+                        const toneNum = (modal._syllableTones||[])[idx]||0;
+                        const toneObj = currentLanguage.phonology.tones.find(t=>t.number===toneNum);
+                        wordWithTone += syll;
+                        if (showTone && toneObj && toneObj.number!==0) {
+                            wordWithTone += (toneObj.representation||toneObj.display||toneObj.number);
+                        }
+                    });
+                    modalWordInput.value = wordWithTone;
+                    if (typeof origSaveHandler === 'function') origSaveHandler();
+                };
+            }
+
 
             const orthographyContainerId = 'orthographyTabSpecificContent';
             let orthographyContainer = container.querySelector(`#${orthographyContainerId}`);
@@ -4279,7 +5091,11 @@ deleteLangButton.addEventListener('click', () => {
 
             section.innerHTML = `<datalist id="${soundDatalistId}">${soundOptionsHtml}</datalist>`;
   createSelectInput(section, '✒️ ระบบการเขียน (Writing System):', 'writingSystemSelectOrtho', ortho.writingSystem,
-                [{value: 'latin', text: 'ใช้ตัวอักษรละติน (A-Z) (อาจใช้ Grapheme Mappings จากระบบเสียง)'}, {value: 'custom', text: 'ใช้สัญลักษณ์กำหนดเอง (Custom Symbols)'}]
+                [
+                    {value: 'latin', text: 'ใช้ตัวอักษรละติน (A-Z) (อาจใช้ Grapheme Mappings จากระบบเสียง)'},
+                    {value: 'custom', text: 'ใช้สัญลักษณ์กำหนดเอง (Custom Symbols)'},
+                    {value: 'logographic', text: 'อักษรภาพ (logographic)'}
+                ]
             ).onchange = (e) => {
                 ortho.writingSystem = e.target.value;
                 renderOrthographyUI(container); 
@@ -4314,40 +5130,202 @@ deleteLangButton.addEventListener('click', () => {
                 <div class="flex gap-2 items-center flex-wrap p-2 border rounded bg-indigo-100">
                     <input type="text" id="customSymbolSoundOrtho" list="${soundDatalistId}" placeholder="เสียง (เช่น k, sh, a)" class="p-1 border rounded-md text-sm flex-grow sm:flex-grow-0">
                     <input type="text" id="customSymbolCharOrtho" placeholder="สัญลักษณ์ (เช่น ⚶, ✶)" class="p-1 border rounded-md text-sm flex-grow sm:flex-grow-0">
+                    <button id="drawCustomSymbolBtnOrthoNew" class="btn-secondary bg-indigo-500 hover:bg-indigo-600 px-2 py-1 rounded-md text-xs"><i class="fas fa-pen"></i> วาด</button>
+                    <label class="btn-secondary bg-indigo-400 hover:bg-indigo-500 px-2 py-1 rounded-md text-xs cursor-pointer m-0">
+                        <input type="file" id="uploadCustomSymbolPngOrthoNew" accept="image/png" style="display:none;">
+                        <i class="fas fa-upload"></i> อัปโหลด PNG
+                    </label>
+                    <span id="customSymbolPreviewOrthoNew" class="ml-2"></span>
                     <button id="addCustomSymbolBtnOrtho" class="btn-secondary bg-indigo-400 hover:bg-indigo-500 px-2 py-1 rounded-md text-xs">เพิ่มสัญลักษณ์</button>
-                </div>`;
+                </div>
+                <!-- Modal สำหรับวาดสัญลักษณ์ใหม่ -->
+                <div id="drawCustomSymbolModalOrthoNew" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);align-items:center;justify-content:center;">
+                  <div style="background:#fff;padding:20px;border-radius:8px;min-width:320px;max-width:90vw;">
+                    <h4 class="mb-2">วาดสัญลักษณ์</h4>
+                    <canvas id="drawCustomSymbolCanvasOrthoNew" width="96" height="96" style="border:1px solid #ccc;background:transparent;"></canvas><br>
+                    <button id="clearDrawCustomSymbolBtnOrthoNew" class="btn-secondary text-xs">ล้าง</button>
+                    <button id="saveDrawCustomSymbolBtnOrthoNew" class="btn-primary text-xs">บันทึก</button>
+                    <button id="closeDrawCustomSymbolBtnOrthoNew" class="btn-danger text-xs">ปิด</button>
+                  </div>
+                </div>
+            `;
+            // --- Logic: วาด/อัปโหลด PNG สำหรับเพิ่ม custom symbol ใหม่ ---
+            let drawnCustomSymbolDataUrlNew = null;
             customSymbolsSection.innerHTML = addSymbolForm;
             section.appendChild(customSymbolsSection);
+            // วาด
+            const drawBtnNew = section.querySelector('#drawCustomSymbolBtnOrthoNew');
+            if (drawBtnNew) {
+                drawBtnNew.onclick = () => {
+                    const modal = document.getElementById('drawCustomSymbolModalOrthoNew');
+                    modal.style.display = 'flex';
+                    let drawing = false;
+                    const canvas = document.getElementById('drawCustomSymbolCanvasOrthoNew');
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0,0,canvas.width,canvas.height);
+                    ctx.globalAlpha = 1.0;
+                    ctx.fillStyle = 'rgba(0,0,0,0)';
+                    ctx.fillRect(0,0,canvas.width,canvas.height);
+                    canvas.onmousedown = (e) => { drawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); };
+                    canvas.onmouseup = () => { drawing = false; };
+                    canvas.onmouseleave = () => { drawing = false; };
+                    canvas.onmousemove = (e) => {
+                        if (!drawing) return;
+                        ctx.lineWidth = 4;
+                        ctx.lineCap = 'round';
+                        ctx.strokeStyle = '#222';
+                        ctx.lineTo(e.offsetX, e.offsetY);
+                        ctx.stroke();
+                    };
+                    document.getElementById('clearDrawCustomSymbolBtnOrthoNew').onclick = () => {
+                        ctx.clearRect(0,0,canvas.width,canvas.height);
+                    };
+                    document.getElementById('saveDrawCustomSymbolBtnOrthoNew').onclick = () => {
+                        drawnCustomSymbolDataUrlNew = canvas.toDataURL('image/png');
+                        // Show preview
+                        const preview = section.querySelector('#customSymbolPreviewOrthoNew');
+                        preview.innerHTML = `<img src='${drawnCustomSymbolDataUrlNew}' alt='drawn' style='height:32px;vertical-align:middle;background:transparent'/>`;
+                        modal.style.display = 'none';
+                    };
+                    document.getElementById('closeDrawCustomSymbolBtnOrthoNew').onclick = () => {
+                        modal.style.display = 'none';
+                    };
+                };
+            }
+            // อัปโหลด PNG
+            const uploadInputNew = section.querySelector('#uploadCustomSymbolPngOrthoNew');
+            if (uploadInputNew) {
+                uploadInputNew.onchange = (event) => {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        drawnCustomSymbolDataUrlNew = e.target.result;
+                        // Show preview
+                        const preview = section.querySelector('#customSymbolPreviewOrthoNew');
+                        preview.innerHTML = `<img src='${drawnCustomSymbolDataUrlNew}' alt='uploaded' style='height:32px;vertical-align:middle;background:transparent'/>`;
+                    };
+                    reader.readAsDataURL(file);
+                    event.target.value = null;
+                };
+            }
 
             const renderCustomSymbolsListLocal = () => {
-                const listEl = section.querySelector('#customSymbolListOrtho'); 
+
+                const listEl = section.querySelector('#customSymbolListOrtho');
                 if (!listEl) return;
-                listEl.innerHTML = ''; 
+                listEl.innerHTML = '';
                 (ortho.customSymbols || []).forEach((sym, index) => {
-                    listEl.innerHTML += `<div class="flex items-center justify-between p-1 bg-white rounded border border-indigo-100 text-sm">
-                        <span>เสียง '${sym.sound}' <i class="fas fa-arrow-right mx-1"></i> สัญลักษณ์ '${sym.symbol}'</span>
-                        <button class="text-xs text-red-500 hover:text-red-700" onclick="removeCustomSymbol(${index})">&times; ลบ</button></div>`;
+                    let imgHtml = sym.imageData ? `<img src='${sym.imageData}' alt='img' style='height:32px;vertical-align:middle;background:transparent'/>` : '';
+                    listEl.innerHTML += `
+                        <div class="flex items-center gap-2 p-1 bg-white rounded border border-indigo-100 text-sm">
+                            <span>เสียง '<span class="font-mono">${sym.sound}</span>' <i class="fas fa-arrow-right mx-1"></i> สัญลักษณ์ '<span class="font-mono">${sym.symbol}</span>'</span>
+                            <button class="btn-secondary text-xs" onclick="window.openDrawSymbolModalOrtho(${index})">วาด</button>
+                            <label class="btn-secondary text-xs cursor-pointer m-0">อัปโหลด PNG
+                                <input type="file" accept="image/png" style="display:none" onchange="window.uploadCustomSymbolImageOrtho(event, ${index})">
+                            </label>
+                            <span class="ml-2">${imgHtml}</span>
+                            <button class="text-xs text-red-500 hover:text-red-700" onclick="removeCustomSymbol(${index})">&times; ลบ</button>
+                        </div>`;
                 });
                 if (!ortho.customSymbols || ortho.customSymbols.length === 0) {
                     listEl.innerHTML = '<p class="text-xs text-gray-400 p-1">ยังไม่มีสัญลักษณ์กำหนดเอง</p>';
                 }
             };
 
+            // Modal สำหรับวาดภาพ (canvas)
+            if (!document.getElementById('drawSymbolModalOrtho')) {
+                const modal = document.createElement('div');
+                modal.id = 'drawSymbolModalOrtho';
+                modal.style = 'display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);align-items:center;justify-content:center;';
+                modal.innerHTML = `
+                  <div style="background:#fff;padding:20px;border-radius:8px;min-width:320px;max-width:90vw;">
+                    <h4 class="mb-2">วาดสัญลักษณ์</h4>
+                    <canvas id="drawSymbolCanvasOrtho" width="96" height="96" style="border:1px solid #ccc;background:transparent;"></canvas><br>
+                    <button id="clearDrawSymbolBtnOrtho" class="btn-secondary text-xs">ล้าง</button>
+                    <button id="saveDrawSymbolBtnOrtho" class="btn-primary text-xs">บันทึก</button>
+                    <button id="closeDrawSymbolBtnOrtho" class="btn-danger text-xs">ปิด</button>
+                  </div>
+                `;
+                document.body.appendChild(modal);
+            }
+
+            // ฟังก์ชันเปิด modal วาด
+            window.openDrawSymbolModalOrtho = (idx) => {
+                const modal = document.getElementById('drawSymbolModalOrtho');
+                modal.style.display = 'flex';
+                let drawing = false;
+                const canvas = document.getElementById('drawSymbolCanvasOrtho');
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                ctx.globalAlpha = 1.0;
+                ctx.fillStyle = 'rgba(0,0,0,0)';
+                ctx.fillRect(0,0,canvas.width,canvas.height);
+                // ถ้ามีภาพเดิม
+                if (ortho.customSymbols[idx].imageData) {
+                    const img = new window.Image();
+                    img.onload = () => ctx.drawImage(img,0,0,canvas.width,canvas.height);
+                    img.src = ortho.customSymbols[idx].imageData;
+                }
+                canvas.onmousedown = (e) => { drawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); };
+                canvas.onmouseup = () => { drawing = false; };
+                canvas.onmouseleave = () => { drawing = false; };
+                canvas.onmousemove = (e) => {
+                    if (!drawing) return;
+                    ctx.lineWidth = 4;
+                    ctx.lineCap = 'round';
+                    ctx.strokeStyle = '#222';
+                    ctx.lineTo(e.offsetX, e.offsetY);
+                    ctx.stroke();
+                };
+                document.getElementById('clearDrawSymbolBtnOrtho').onclick = () => {
+                    ctx.clearRect(0,0,canvas.width,canvas.height);
+                };
+                document.getElementById('saveDrawSymbolBtnOrtho').onclick = () => {
+                    ortho.customSymbols[idx].imageData = canvas.toDataURL('image/png');
+                    saveData();
+                    renderCustomSymbolsListLocal();
+                    modal.style.display = 'none';
+                };
+                document.getElementById('closeDrawSymbolBtnOrtho').onclick = () => {
+                    modal.style.display = 'none';
+                };
+            };
+
+            // ฟังก์ชันอัปโหลด PNG
+            window.uploadCustomSymbolImageOrtho = (event, idx) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    ortho.customSymbols[idx].imageData = e.target.result;
+                    saveData();
+                    renderCustomSymbolsListLocal();
+                };
+                reader.readAsDataURL(file);
+                event.target.value = null;
+            };
+
             renderCustomSymbolsListLocal(); 
             const addBtn = section.querySelector('#addCustomSymbolBtnOrtho');
             if (addBtn) { 
-                 addBtn.onclick = () => {
+                addBtn.onclick = () => {
                     const soundInput = section.querySelector('#customSymbolSoundOrtho');
                     const symbolInput = section.querySelector('#customSymbolCharOrtho');
                     const sound = soundInput.value.trim();
-                    const symbol = symbolInput.value.trim();
-                    if (sound && symbol) {
+                    const symbol = symbolInput.value.trim(); // อนุญาตให้ว่างได้
+                    let imageData = drawnCustomSymbolDataUrlNew || null;
+                    if (sound) {
                         if (ortho.customSymbols.some(s => s.sound === sound)) { 
                             alert(`เสียง '${sound}' ถูกกำหนดสัญลักษณ์แล้ว หากต้องการเปลี่ยน กรุณาลบของเก่าก่อน`);
                             return;
                         }
-                        ortho.customSymbols.push({ sound, symbol });
-                        soundInput.value = ''; symbolInput.value = '';
+                        ortho.customSymbols.push({ sound, symbol, imageData });
+                        soundInput.value = '';
+                        symbolInput.value = '';
+                        drawnCustomSymbolDataUrlNew = null;
+                        const preview = section.querySelector('#customSymbolPreviewOrthoNew');
+                        if (preview) preview.innerHTML = '';
                         renderCustomSymbolsListLocal(); 
                         saveData();
                     }
@@ -4412,8 +5390,12 @@ deleteLangButton.addEventListener('click', () => {
             section.className = 'p-3 border border-teal-200 rounded-md bg-teal-50 space-y-4';
             const etymologyDatalistId = `dictionaryWordsForEtymologyDatalist_${Date.now()}`;
             let datalistOptions = '';
-            (currentLanguage.lexicon || []).forEach(w => { 
-                datalistOptions += `<option value="${transliterateWordToSymbols(w.word)}" data-baseform="${w.word}">${w.meaning} [ฐาน: ${w.word}]</option>`;
+
+            (currentLanguage.lexicon || []).forEach(w => {
+                // Show orthography (plain text, not HTML) and base form in parentheses
+                let ortho = getOrthographicForm(w, false, false); // always plain text for datalist
+                let base = w.word;
+                datalistOptions += `<option value="${ortho}" data-baseform="${base}">${ortho} (${base})</option>`;
             });
 
             section.innerHTML = `
@@ -4731,7 +5713,7 @@ deleteLangButton.addEventListener('click', () => {
             if (!word) return;
             word.evolutionTimeline = word.evolutionTimeline || []; 
 
-            genericModalTitle.textContent = `วิวัฒนาการของคำ: ${getOrthographicForm(word)}[${word.word}]`;
+            genericModalTitle.textContent = `วิวัฒนาการของคำ: ${transliterateWordToSymbols(word.word)} [${word.word}]`;
             let content = `<p class="text-sm mb-2">ติดตามการเปลี่ยนแปลงของคำนี้ผ่านยุคต่างๆ คำฐาน (เสียง): <strong class="font-mono">${word.word}</strong>, การออกเสียงฐาน (ละเอียด): <strong class="font-mono">${word.phonetics || 'N/A'}</strong></p>`;
 
             const sortedEras = [...currentLanguage.eras].sort((a,b) => (a.order || 0) - (b.order || 0));
@@ -4916,7 +5898,9 @@ deleteLangButton.addEventListener('click', () => {
             const wordSearchDatalistId = `dialectWordDatalist_${Date.now()}`;
             let datalistOptions = '';
             (currentLanguage.lexicon || []).forEach(w => { 
-                datalistOptions += `<option value="${transliterateWordToSymbols(w.word)}" data-wordid="${w.id}" data-baseform="${w.word}">${w.meaning} [ฐาน: ${w.word}]</option>`;
+                let ortho = getOrthographicForm(w, false, false);
+                let base = w.word;
+                datalistOptions += `<option value="${ortho}" data-wordid="${w.id}" data-baseform="${base}">${ortho} (${base})</option>`;
             });
 
             comparisonSection.innerHTML = `
@@ -5123,7 +6107,7 @@ deleteLangButton.addEventListener('click', () => {
             if (!word) return;
             word.dialectalForms = word.dialectalForms || []; 
 
-            genericModalTitle.textContent = `ภาษาถิ่นของคำ: ${getOrthographicForm(word)}`;    
+            genericModalTitle.textContent = `ภาษาถิ่นของคำ: ${transliterateWordToSymbols(word.word)}`;
             let content = `<p class="text-sm mb-2">เพิ่ม/แก้ไขรูปคำในภาษาถิ่นต่างๆ สำหรับคำมาตรฐาน: <strong>${word.meaning}</strong> (รูปเสียงมาตรฐาน: <strong class="font-mono">${word.word}</strong>)</p>`;
 
             content += `<div id="dialectFormsContainerModal" class="space-y-3">`; 
@@ -5166,6 +6150,89 @@ deleteLangButton.addEventListener('click', () => {
                 const formElements = genericModalContent.querySelectorAll('.dialect-form-entry');
                 formElements.forEach(formEl => {
                     const region = formEl.querySelector('.dialect-region').value;
+            // --- Evolution Table ---
+            const evolutionTableSection = document.createElement('div');
+            evolutionTableSection.className = 'mb-6 p-4 border border-purple-200 rounded-lg bg-purple-50 shadow-sm';
+            const tableHeader = document.createElement('h4');
+            tableHeader.className = 'text-lg font-semibold text-purple-700 mb-3';
+            tableHeader.textContent = 'ตารางวิวัฒนาการคำศัพท์';
+            evolutionTableSection.appendChild(tableHeader);
+
+            // Helper: get evolution timeline for a word
+            function getEvolutionTimeline(wordObj) {
+                return (wordObj && Array.isArray(wordObj.evolutionTimeline)) ? wordObj.evolutionTimeline : [];
+            }
+
+            // Table
+            const table = document.createElement('table');
+            table.className = 'min-w-full divide-y divide-purple-200 bg-white rounded shadow';
+            const thead = document.createElement('thead');
+            thead.innerHTML = `
+                <tr class="bg-purple-100">
+                    <th class="px-4 py-2 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">#</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">คำศัพท์</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">ความหมาย</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">วิวัฒนาการ</th>
+                </tr>
+            `;
+            table.appendChild(thead);
+            const tbody = document.createElement('tbody');
+
+            // Filter lexicon: show only words with evolutionTimeline (or all if you want)
+            const wordsWithEvolution = (currentLanguage.lexicon || []).filter(w => w.evolutionTimeline && w.evolutionTimeline.length > 0);
+
+            if (wordsWithEvolution.length === 0) {
+                const tr = document.createElement('tr');
+                const td = document.createElement('td');
+                td.colSpan = 4;
+                td.className = 'text-center text-gray-400 py-4';
+                td.textContent = 'ยังไม่มีข้อมูลวิวัฒนาการคำศัพท์';
+                tr.appendChild(td);
+                tbody.appendChild(tr);
+            } else {
+                wordsWithEvolution.forEach((wordObj, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.className = idx % 2 === 0 ? 'bg-white' : 'bg-purple-50';
+                    // #
+                    const tdIdx = document.createElement('td');
+                    tdIdx.className = 'px-4 py-2 text-sm text-gray-700';
+                    tdIdx.textContent = (idx + 1).toString();
+                    tr.appendChild(tdIdx);
+                    // คำศัพท์
+                    const tdWord = document.createElement('td');
+                    tdWord.className = 'px-4 py-2 text-sm font-semibold text-purple-800';
+                    tdWord.textContent = wordObj.word || '-';
+                    tr.appendChild(tdWord);
+                    // ความหมาย
+                    const tdMeaning = document.createElement('td');
+                    tdMeaning.className = 'px-4 py-2 text-sm text-gray-700';
+                    tdMeaning.textContent = wordObj.meaning || '-';
+                    tr.appendChild(tdMeaning);
+                    // วิวัฒนาการ
+                    const tdEvo = document.createElement('td');
+                    tdEvo.className = 'px-4 py-2 text-sm text-gray-700';
+                    const timeline = getEvolutionTimeline(wordObj);
+                    if (timeline.length === 0) {
+                        tdEvo.textContent = '-';
+                    } else {
+                        // Show as a sequence: base → step1 → step2 ...
+                        tdEvo.innerHTML = timeline.map((step, i) => {
+                            // step: { form, era, notes }
+                            let txt = `<span class='font-mono bg-purple-100 px-2 py-0.5 rounded'>${step.form || '-'}</span>`;
+                            if (step.era) txt += ` <span class='text-xs text-purple-500'>(${step.era})</span>`;
+                            if (step.notes) txt += ` <span class='text-xs text-gray-400' title='${step.notes}'>🛈</span>`;
+                            if (i < timeline.length - 1) txt += ` <span class='mx-1 text-purple-400'>&rarr;</span> `;
+                            return txt;
+                        }).join('');
+                    }
+                    tr.appendChild(tdEvo);
+                    tbody.appendChild(tr);
+                });
+            }
+
+            table.appendChild(tbody);
+            evolutionTableSection.appendChild(table);
+            container.appendChild(evolutionTableSection);
                     const phonetic = formEl.querySelector('.dialect-phonetic').value.trim();
                     const orthographic = formEl.querySelector('.dialect-orthographic').value.trim();
                     const meaningDiff = formEl.querySelector('.dialect-meaning').value.trim();
@@ -5763,15 +6830,45 @@ deleteLangButton.addEventListener('click', () => {
             sentenceStructSelect.value = currentLanguage.grammar.sentenceStructure; 
             document.getElementById('generateSentenceBtnTools').addEventListener('click', generateSentence);
 
-            document.getElementById('exportCurrentLangBtnTools').addEventListener('click', () => exportDataAsJSON(currentLanguage, `${currentLanguage.name || 'current_language'}_data.json`));
-            document.getElementById('exportAllLangsBtnTools').addEventListener('click', () => {
-                 const dataToExport = {
+            document.getElementById('exportCurrentLangBtnTools')?.addEventListener('click', () => {
+                exportDataAsJSON(currentLanguage, `${currentLanguage.name || 'current_language'}_data.json`);
+            });
+            document.getElementById('exportAllLangsBtnTools')?.addEventListener('click', () => {
+                const dataToExport = {
                     allLanguages: allLanguages,
-                    globalInterLangRules: globalInterLangRules 
+                    globalInterLangRules: globalInterLangRules
                 };
                 exportDataAsJSON(dataToExport, 'all_languages_and_rules_backup.json');
             });
-            document.getElementById('importAllLangsFileTools').addEventListener('change', importAllLanguagesData);
+            document.getElementById('importAllLangsFileTools')?.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const imported = JSON.parse(e.target.result);
+                            if (imported.allLanguages && Array.isArray(imported.allLanguages)) {
+                                allLanguages = imported.allLanguages;
+                            }
+                            if (imported.globalInterLangRules && Array.isArray(imported.globalInterLangRules)) {
+                                globalInterLangRules = imported.globalInterLangRules;
+                            }
+                            // Optionally, update currentLanguage to the first language or keep as is
+                            if (allLanguages.length > 0) {
+                                currentLanguage = allLanguages[0];
+                            }
+                            saveData();
+                            alert('นำเข้าข้อมูลสำเร็จ!');
+                            // Optionally, re-render UI if needed
+                            location.reload();
+                        } catch (err) {
+                            alert('ไฟล์ไม่ถูกต้องหรือเกิดข้อผิดพลาดในการนำเข้า');
+                        }
+                    };
+                    reader.readAsText(file);
+                    event.target.value = null;
+                }
+            });
         }
 
         function translateText() { 
@@ -5934,27 +7031,167 @@ deleteLangButton.addEventListener('click', () => {
             const evolutionContainer = document.createElement('div');
             evolutionContainer.className = 'p-3 border rounded bg-gray-50';
 
+            // Autocomplete search for base word
+            let datalistId = 'evoWordSearchDatalist_' + Date.now();
+            let datalistOptions = '';
+            (currentLanguage.lexicon || []).forEach(w => {
+                let ortho = getOrthographicForm(w, false, false);
+                let base = w.word;
+                datalistOptions += `<option value="${ortho} (${base}) - ${w.meaning}" data-wordid="${w.id}">`;
+            });
+            // Era options
+            let eraOptions = '';
+            (currentLanguage.evolution.eras || []).forEach(era => {
+                eraOptions += `<option value="${era.id}">${era.name}</option>`;
+            });
             evolutionContainer.innerHTML = `
                 <h3 class="text-lg font-semibold mb-3">ระบบวิวัฒนาการคำ</h3>
                 <div class="mb-3">
-                    <label class="block text-sm font-medium">กำหนดยุคสมัยฐาน:</label>
-                    <select id="baseEraSelect" class="p-1 border rounded text-sm">
-                        ${currentLanguage.evolution.eras.map(era => `<option value="${era.id}">${era.name}</option>`).join('')}
-                    </select>
+                    <label class="block text-sm font-medium">ค้นหาคำศัพท์ (จากพจนานุกรม):</label>
+                    <input id="evoBaseWordSearch" class="p-1 border rounded text-sm w-full" list="${datalistId}" placeholder="ค้นหาคำ...">
+                    <datalist id="${datalistId}">${datalistOptions}</datalist>
                 </div>
                 <div class="mb-3">
-                    <label class="block text-sm font-medium">ระบุยุคสมัยที่คำเกิดขึ้น:</label>
-                    <select id="wordEraSelect" class="p-1 border rounded text-sm">
-                        ${currentLanguage.evolution.eras.map(era => `<option value="${era.id}">${era.name}</option>`).join('')}
-                    </select>
+                    <label class="block text-sm font-medium">เพิ่ม/แก้ไขยุคสมัย:</label>
+                    <div class="flex gap-2 mb-2">
+                        <input id="newEraNameInput" class="p-1 border rounded text-sm" placeholder="ชื่อยุคใหม่">
+                        <button id="addEraBtnEvo" class="btn-secondary text-xs">เพิ่มยุค</button>
+                    </div>
+                    <select id="evoEraSelect" class="p-1 border rounded text-sm">${eraOptions}</select>
+                    <button id="removeEraBtnEvo" class="btn-secondary text-xs ml-2">ลบยุค</button>
                 </div>
-                <div id="wordEvolutionTree" class="p-3 border rounded bg-white"></div>
+                <div class="mb-3">
+                    <label class="block text-sm font-medium">กฎการเปลี่ยนเสียงสำหรับยุคที่เลือก:</label>
+                    <div id="evoEraRulesList" class="mb-2"></div>
+                    <div class="flex gap-2 mb-2">
+                        <input id="evoRuleFromInput" class="p-1 border rounded text-sm" placeholder="จาก (เช่น a)">
+                        <input id="evoRuleToInput" class="p-1 border rounded text-sm" placeholder="เป็น (เช่น e)">
+                        <input id="evoRuleContextInput" class="p-1 border rounded text-sm" placeholder="บริบท (เช่น _#)">
+                        <button id="addEvoRuleBtn" class="btn-secondary text-xs">เพิ่มกฎ</button>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <button id="generateEvolutionBtn" class="btn-primary text-sm">สร้างสายวิวัฒนาการ</button>
+                </div>
+                <div id="evoEvolutionResult" class="p-3 border rounded bg-white"></div>
             `;
 
             container.appendChild(evolutionContainer);
-            document.getElementById('baseEraSelect').addEventListener('change', updateBaseEra);
-            document.getElementById('wordEraSelect').addEventListener('change', updateWordEra);
-            renderEvolutionTree();
+
+            // Add era
+            document.getElementById('addEraBtnEvo').onclick = () => {
+                const name = document.getElementById('newEraNameInput').value.trim();
+                if (!name) { alert('กรุณากรอกชื่อยุค'); return; }
+                const id = 'era_' + Date.now();
+                currentLanguage.evolution.eras.push({ id, name, soundChangeRules: [] });
+                renderWordEvolutionUI(container);
+                saveData();
+            };
+            // Remove era
+            document.getElementById('removeEraBtnEvo').onclick = () => {
+                const eraId = document.getElementById('evoEraSelect').value;
+                if (!eraId) return;
+                currentLanguage.evolution.eras = currentLanguage.evolution.eras.filter(e => e.id !== eraId);
+                renderWordEvolutionUI(container);
+                saveData();
+            };
+            // Add rule
+            document.getElementById('addEvoRuleBtn').onclick = () => {
+                const eraId = document.getElementById('evoEraSelect').value;
+                const from = document.getElementById('evoRuleFromInput').value.trim();
+                const to = document.getElementById('evoRuleToInput').value.trim();
+                const context = document.getElementById('evoRuleContextInput').value.trim();
+                if (!eraId || !from) { alert('เลือกยุคและกรอก "จาก"'); return; }
+                const era = currentLanguage.evolution.eras.find(e => e.id === eraId);
+                if (!era) return;
+                era.soundChangeRules = era.soundChangeRules || [];
+                era.soundChangeRules.push({ from, to, context });
+                renderWordEvolutionUI(container);
+                saveData();
+            };
+            // Show rules for selected era
+            const updateEraRulesList = () => {
+                const eraId = document.getElementById('evoEraSelect').value;
+                const era = currentLanguage.evolution.eras.find(e => e.id === eraId);
+                const listDiv = document.getElementById('evoEraRulesList');
+                if (!era) { listDiv.innerHTML = '<span class="text-gray-400">ยังไม่ได้เลือกยุค</span>'; return; }
+                listDiv.innerHTML = '';
+                (era.soundChangeRules || []).forEach((rule, idx) => {
+                    const ruleDiv = document.createElement('div');
+                    ruleDiv.className = 'flex gap-2 items-center mb-1';
+                    ruleDiv.innerHTML = `<span class="text-xs bg-gray-200 rounded px-2 py-1">${rule.from} → ${rule.to} <span class="text-gray-400">[${rule.context||'-'}]</span></span> <button class="text-xs text-red-500" data-idx="${idx}">ลบ</button>`;
+                    ruleDiv.querySelector('button').onclick = () => {
+                        era.soundChangeRules.splice(idx,1);
+                        renderWordEvolutionUI(container);
+                        saveData();
+                    };
+                    listDiv.appendChild(ruleDiv);
+                });
+                if ((era.soundChangeRules||[]).length === 0) listDiv.innerHTML = '<span class="text-gray-400">ยังไม่มีกฎ</span>';
+            };
+            document.getElementById('evoEraSelect').onchange = updateEraRulesList;
+            updateEraRulesList();
+
+            // --- Autocomplete logic for base word search ---
+            let selectedBaseWordId = null;
+            const evoBaseWordSearch = document.getElementById('evoBaseWordSearch');
+            evoBaseWordSearch.addEventListener('input', function(e) {
+                const val = e.target.value;
+                // Try to match to a lexicon entry
+                const opt = Array.from(document.getElementById(datalistId).options).find(o => o.value === val);
+                if (opt && opt.dataset.wordid) {
+                    selectedBaseWordId = opt.dataset.wordid;
+                } else {
+                    selectedBaseWordId = null;
+                }
+            });
+
+            // Generate evolution chain and tree
+            document.getElementById('generateEvolutionBtn').onclick = () => {
+                let baseWordId = selectedBaseWordId;
+                if (!baseWordId) {
+                    // fallback: try to match by value
+                    const val = evoBaseWordSearch.value;
+                    const opt = Array.from(document.getElementById(datalistId).options).find(o => o.value === val);
+                    if (opt && opt.dataset.wordid) baseWordId = opt.dataset.wordid;
+                }
+                if (!baseWordId) { alert('เลือกคำฐาน'); return; }
+                const baseWord = currentLanguage.lexicon.find(w => w.id == baseWordId);
+                if (!baseWord) { alert('ไม่พบคำ'); return; }
+                let resultHtml = `<div class="mb-2"><strong>คำฐาน:</strong> <span class="font-mono">${getOrthographicForm(baseWord)} (${baseWord.word})</span> <span class="text-xs text-gray-500">${baseWord.meaning}</span></div>`;
+                let form = baseWord.word;
+                // Sort eras by order of addition
+                const eras = [...(currentLanguage.evolution.eras||[])];
+                let chain = [{ era: null, form, ortho: getOrthographicForm(baseWord), word: baseWord }];
+                for (let i=0; i<eras.length; ++i) {
+                    const era = eras[i];
+                    let formBefore = form;
+                    (era.soundChangeRules||[]).forEach(rule => {
+                        try {
+                            let regex = rule.from;
+                            if (rule.context) {
+                                regex = convertContextualRuleToRegex(rule.from, rule.to, rule.context);
+                            }
+                            form = form.replace(regex, rule.to);
+                        } catch(e) {}
+                    });
+                    chain.push({ era, form, ortho: transliterateWordToSymbols(form), word: baseWord });
+                }
+                // Render as horizontal tree
+                resultHtml += `<div class="overflow-x-auto"><div style="display:flex;align-items:center;gap:16px;">`;
+                chain.forEach((node, idx) => {
+                    if (node.era) {
+                        resultHtml += `<div class="flex flex-col items-center"><div class="text-xs text-gray-500 mb-1">${node.era.name}</div><div class="font-mono bg-purple-50 border rounded px-2 py-1">${node.ortho}</div><div class="text-xs text-gray-400 mt-1">[${node.form}]</div></div>`;
+                    } else {
+                        resultHtml += `<div class="flex flex-col items-center"><div class="text-xs text-gray-500 mb-1">คำฐาน</div><div class="font-mono bg-green-50 border rounded px-2 py-1">${node.ortho}</div><div class="text-xs text-gray-400 mt-1">[${node.form}]</div></div>`;
+                    }
+                    if (idx < chain.length-1) {
+                        resultHtml += `<div class="text-2xl text-gray-400">→</div>`;
+                    }
+                });
+                resultHtml += `</div></div>`;
+                document.getElementById('evoEvolutionResult').innerHTML = resultHtml;
+            };
         }
 
         function updateBaseEra() {
