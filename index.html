@@ -150,7 +150,7 @@
             <button id="closeLanguageNameModalBtn" class="absolute top-3 right-4 text-2xl text-purple-500 hover:text-purple-700">&times;</button>
             <h2 class="text-2xl font-bold mb-4 text-center">👋 ยินดีต้อนรับสู่โปรแกรมประดิษฐภาษา!</h2>
             <p class="mb-4 text-center">กรุณาตั้งชื่อภาษาของคุณก่อนเริ่มใช้งาน:</p>
-            <input type="text" id="languageNameInput" class="w-full p-2 border border-purple-300 rounded-md mb-4 focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="เช่น 'พาร์เซล', 'วิทยภาษา'">
+            <input type="text" id="languageNameInput" class="w-full p-2 border border-purple-300 rounded-md mb-4 focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="เช่น 'พารเซล', 'วิทยภาษา'">
             <button id="submitLanguageName" class="w-full btn-primary py-2 px-4 rounded-md font-semibold">เริ่มสร้างภาษา ✨</button>
         </div>
     </div>
@@ -1374,12 +1374,7 @@ deleteLangButton.addEventListener('click', () => {
 
 
         function renderPhonologyUI(container) {
-            // แสดงสถานะวรรณยุกต์ของภาษา
-            const toneStatus = currentLanguage.phonology.hasTones ? "มีวรรณยุกต์" : "ไม่มีวรรณยุกต์";
-            const toneStatusEl = document.createElement('div');
-            toneStatusEl.className = "mb-2 text-lg text-purple-700 font-semibold";
-            toneStatusEl.textContent = `ภาษานี้${toneStatus}`;
-            container.appendChild(toneStatusEl);
+            
 
             const phonology = currentLanguage.phonology;
 
