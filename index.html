@@ -7070,16 +7070,21 @@ window.openEvolutionModalForWord = (wordId) => {
                 </div>
                 <div id="sentenceOutputArea" class="mt-3 p-3 bg-white rounded shadow hidden">
                     <div class="mb-1"><strong class="text-indigo-700">ประโยค (อักขรวิธี):</strong> <span id="sentenceOutputOrtho" class="font-mono"></span></div>
-                    <div><strong class="text-indigo-700">คำแปล:</strong> <span id="sentenceOutputMeaning"></span></div>
+                    <div class="mb-1"><strong class="text-indigo-700">ประโยค (สัทอักษร):</strong> <span id="sentenceOutputPhonetic" class="font-mono"></span></div>
+                    <div><strong class="text-indigo-700">คำแปล:</strong> <input id="sentenceOutputMeaning" class="p-1 border border-indigo-300 rounded-md w-full mt-1 text-sm" /></div>
                 </div>
                 <div id="savedSentencesContainer" class="mt-4"></div>
             `;
             container.appendChild(section);
-            // Builder state tracks the current structure, selections and last built sentence
+            // Builder state tracks the current structure, selections and last built sentence.
+            // In addition to the default fields we track whether the verb is intransitive
+            // (so that the object can be omitted).  Modifier selections (subject/object
+            // adjectives and adverbs) are now stored on each role rather than globally.
             const builderState = {
                 structure: (currentLanguage.grammar && currentLanguage.grammar.sentenceStructure) ? currentLanguage.grammar.sentenceStructure : 'SVO',
                 roles: [],
-                lastBuilt: null
+                lastBuilt: null,
+                verbIsIntransitive: false
             };
             // Populate the structure dropdown with standard options and set current selection
             const structSelect = section.querySelector('#sentenceStructureSelect');
@@ -7095,6 +7100,22 @@ window.openEvolutionModalForWord = (wordId) => {
                 structSelect.addEventListener('change', () => {
                     builderState.structure = structSelect.value;
                     updateBuilderFields();
+                    // After rebuilding the fields, ensure the object role row is hidden if the selected verb is intransitive
+                    builderState.roles.forEach((r, ridx) => {
+                        if (r.role === 'O') {
+                            const oRow = section.querySelector(`#sentenceRow_${ridx}`);
+                            if (oRow) {
+                                oRow.style.display = builderState.verbIsIntransitive ? 'none' : '';
+                            }
+                        }
+                    });
+                    // Update the object adjective visibility
+                    try {
+                        if (typeof updateObjectAdjVisibility === 'function') {
+                            updateObjectAdjVisibility();
+                        }
+                    } catch (e) {}
+                    updateBuildButtons();
                 });
             }
             // Map sentence role letters to Thai descriptions for clarity
@@ -7132,7 +7153,8 @@ window.openEvolutionModalForWord = (wordId) => {
                 builderState.roles = [];
                 // Iterate over each character in the structure string to set up roles
                 builderState.structure.split('').forEach((ch, idx) => {
-                    const roleObj = { role: ch, wordId: null, selectedOptions: {} };
+                    // Each role now carries its own modifier (adjective/adverb) selection and position.
+                    const roleObj = { role: ch, wordId: null, selectedOptions: {}, modifierId: null, modifierPos: 'before' };
                     // If builderState.roles existed previously (e.g. editing), try to copy previous selections
                     if (builderState.roles && builderState.roles[idx]) {
                         roleObj.wordId = builderState.roles[idx].wordId;
@@ -7173,6 +7195,69 @@ window.openEvolutionModalForWord = (wordId) => {
                     if (roleObj.wordId) {
                         renderMorphSelectors(idx);
                     }
+                    // Add adjective/adverb selectors within this row based on the role
+                    if (['S','O','V'].includes(ch)) {
+                        // Create a container for modifier controls
+                        const modContainer = document.createElement('div');
+                        modContainer.className = 'modifier-controls mt-2 flex flex-col sm:flex-row gap-2 items-start sm:items-center';
+                        // Label indicating type of modifier
+                        const lbl = document.createElement('span');
+                        lbl.className = 'text-sm';
+                        lbl.textContent = (ch === 'V') ? 'คำวิเศษณ์:' : 'คำคุณศัพท์:';
+                        modContainer.appendChild(lbl);
+                        // Select element for the modifier word
+                        const modSelect = document.createElement('select');
+                        modSelect.className = 'p-2 border border-indigo-300 rounded-md flex-grow text-sm';
+                        modSelect.dataset.roleIndex = idx;
+                        const emptyOpt = document.createElement('option');
+                        emptyOpt.value = '';
+                        emptyOpt.textContent = '--ไม่มี--';
+                        modSelect.appendChild(emptyOpt);
+                        // Populate options from the lexicon based on part of speech
+                        (currentLanguage.lexicon || []).forEach(entry => {
+                            const posLower = (entry.partOfSpeech || '').toLowerCase();
+                            const isAdj = posLower.includes('adj') || posLower.includes('adject') || posLower.includes('คุณศัพท์');
+                            const isAdv = posLower.includes('adv') || posLower.includes('adverb') || posLower.includes('วิเศษ');
+                            if ((ch === 'V' && isAdv) || ((ch === 'S' || ch === 'O') && isAdj)) {
+                                const opt = document.createElement('option');
+                                opt.value = entry.id;
+                                opt.textContent = getOrthographicForm(entry);
+                                modSelect.appendChild(opt);
+                            }
+                        });
+                        // If a modifier was previously selected for this role, set it
+                        if (roleObj.modifierId) {
+                            modSelect.value = roleObj.modifierId;
+                        }
+                        modSelect.addEventListener('change', function() {
+                            const rIdx = parseInt(this.dataset.roleIndex);
+                            const val = this.value;
+                            builderState.roles[rIdx].modifierId = val ? parseInt(val) : null;
+                            updateBuildButtons();
+                        });
+                        modContainer.appendChild(modSelect);
+                        // Select element for modifier position (before/after)
+                        const posSelect = document.createElement('select');
+                        posSelect.className = 'p-2 border border-indigo-300 rounded-md text-sm';
+                        posSelect.dataset.roleIndex = idx;
+                        const beforeOpt = document.createElement('option');
+                        beforeOpt.value = 'before';
+                        beforeOpt.textContent = 'ข้างหน้า';
+                        posSelect.appendChild(beforeOpt);
+                        const afterOpt = document.createElement('option');
+                        afterOpt.value = 'after';
+                        afterOpt.textContent = 'ข้างหลัง';
+                        posSelect.appendChild(afterOpt);
+                        posSelect.value = roleObj.modifierPos || 'before';
+                        posSelect.addEventListener('change', function() {
+                            const rIdx = parseInt(this.dataset.roleIndex);
+                            builderState.roles[rIdx].modifierPos = this.value;
+                            updateBuildButtons();
+                        });
+                        modContainer.appendChild(posSelect);
+                        // Append the modifier controls container to the row
+                        row.appendChild(modContainer);
+                    }
                 });
                 updateBuildButtons();
             }
@@ -7210,6 +7295,32 @@ window.openEvolutionModalForWord = (wordId) => {
                 } else {
                     builderState.roles[index].wordId = null;
                     builderState.roles[index].selectedOptions = {};
+                }
+                // If this role is the verb, determine whether it is intransitive.  Use
+                // the partOfSpeech field to check for keywords indicating intransitivity.
+                if (builderState.roles[index] && builderState.roles[index].role === 'V') {
+                    builderState.verbIsIntransitive = false;
+                    if (selectedWordEntry && selectedWordEntry.partOfSpeech) {
+                        const posLower = selectedWordEntry.partOfSpeech.toLowerCase();
+                        if (posLower.includes('intrans') || posLower.includes('อกรรม')) {
+                            builderState.verbIsIntransitive = true;
+                        }
+                    }
+                    // Show or hide the object row depending on verb transitivity
+                    builderState.roles.forEach((r, ridx) => {
+                        if (r.role === 'O') {
+                            const oRow = section.querySelector(`#sentenceRow_${ridx}`);
+                            if (oRow) {
+                                oRow.style.display = builderState.verbIsIntransitive ? 'none' : '';
+                            }
+                        }
+                    });
+                    // Update the object adjective visibility if the helper exists
+                    try {
+                        if (typeof updateObjectAdjVisibility === 'function') {
+                            updateObjectAdjVisibility();
+                        }
+                    } catch (e) {}
                 }
                 // Re-render morph selectors for this role
                 renderMorphSelectors(index);
@@ -7277,7 +7388,11 @@ window.openEvolutionModalForWord = (wordId) => {
             function updateBuildButtons() {
                 const buildBtn = section.querySelector('#buildSentenceBtn');
                 const saveBtn = section.querySelector('#saveSentenceBtn');
-                const allHaveWords = builderState.roles.every(r => !!r.wordId);
+                const allHaveWords = builderState.roles.every(r => {
+                    // When the verb is intransitive the object role can be empty
+                    if (builderState.verbIsIntransitive && r.role === 'O') return true;
+                    return !!r.wordId;
+                });
                 if (buildBtn) buildBtn.disabled = !allHaveWords;
                 if (saveBtn) saveBtn.disabled = !builderState.lastBuilt;
             }
@@ -7287,33 +7402,65 @@ window.openEvolutionModalForWord = (wordId) => {
              * that it can be saved.  If a word is missing an alert will be shown.
              */
             function buildSentence() {
-                const allHave = builderState.roles.every(r => !!r.wordId);
+                // Determine if all required words are selected.  If the verb is intransitive,
+                // the object role can be omitted.
+                const allHave = builderState.roles.every(r => {
+                    if (builderState.verbIsIntransitive && r.role === 'O') return true;
+                    return !!r.wordId;
+                });
                 if (!allHave) {
                     alert('กรุณาเลือกคำให้ครบทุกตำแหน่ง');
                     return;
                 }
+                // Arrays to collect orthographic, phonetic and meaning parts.
                 const orthoParts = [];
+                const phoneticParts = [];
                 const meaningParts = [];
+                // Helper to append a word's inflected forms to the arrays.
+                function appendWord(entry, opts = {}) {
+                    if (!entry) return;
+                    const inf = computeInflectedForms(entry, opts);
+                    orthoParts.push(inf.orthographic || '');
+                    phoneticParts.push(inf.phonetic || '');
+                    meaningParts.push(entry.meaning || '');
+                }
+                // Iterate through the roles and inject per-role modifiers (adjectives/adverbs).
                 builderState.roles.forEach(role => {
-                    const w = (currentLanguage.lexicon || []).find(x => x.id === role.wordId);
-                    if (!w) {
-                        orthoParts.push('(?)');
-                        meaningParts.push('(?)');
-                    } else {
-                        const inf = computeInflectedForms(w, role.selectedOptions);
-                        orthoParts.push(inf.orthographic);
-                        meaningParts.push(w.meaning || '');
+                    // Skip the object if the selected verb is intransitive
+                    if (builderState.verbIsIntransitive && role.role === 'O') {
+                        return;
+                    }
+                    const wordEntry = (currentLanguage.lexicon || []).find(x => x.id === role.wordId);
+                    if (!wordEntry) return;
+                    // Identify modifier entry and position for this role
+                    const modId = role.modifierId;
+                    const modPos = role.modifierPos || 'before';
+                    const modEntry = modId ? (currentLanguage.lexicon || []).find(x => x.id === modId) : null;
+                    // Prepend modifier if it comes before the head
+                    if (modEntry && modPos === 'before') {
+                        appendWord(modEntry);
+                    }
+                    // Append the main word with any inflection options
+                    appendWord(wordEntry, role.selectedOptions);
+                    // Append modifier if it comes after the head
+                    if (modEntry && modPos === 'after') {
+                        appendWord(modEntry);
                     }
                 });
-                const orthoStr = orthoParts.join(' ');
-                const meaningStr = meaningParts.join(' ');
+                const orthoStr = orthoParts.join(' ').trim();
+                const phoneticStr = phoneticParts.join(' ').trim();
+                const meaningStr = meaningParts.join(' ').trim();
                 const outputArea = section.querySelector('#sentenceOutputArea');
                 const outOrtho = section.querySelector('#sentenceOutputOrtho');
+                const outPhon = section.querySelector('#sentenceOutputPhonetic');
                 const outMeaning = section.querySelector('#sentenceOutputMeaning');
                 if (outOrtho) outOrtho.textContent = orthoStr;
-                if (outMeaning) outMeaning.textContent = meaningStr;
+                if (outPhon) outPhon.textContent = phoneticStr;
+                if (outMeaning) {
+                    outMeaning.value = meaningStr;
+                }
                 if (outputArea) outputArea.classList.remove('hidden');
-                builderState.lastBuilt = { orthographic: orthoStr, meaning: meaningStr };
+                builderState.lastBuilt = { orthographic: orthoStr, phonetic: phoneticStr, meaning: meaningStr };
                 updateBuildButtons();
             }
             /**
@@ -7325,6 +7472,9 @@ window.openEvolutionModalForWord = (wordId) => {
             function saveSentence() {
                 if (!builderState.lastBuilt) return;
                 const newId = 'sent_' + (nextSentenceId++);
+                // Use the current value of the translation input for the translation
+                const translationInput = section.querySelector('#sentenceOutputMeaning');
+                const translationValue = translationInput ? translationInput.value : (builderState.lastBuilt ? builderState.lastBuilt.meaning : '');
                 const newSent = {
                     id: newId,
                     structure: builderState.structure,
@@ -7333,7 +7483,7 @@ window.openEvolutionModalForWord = (wordId) => {
                         wordId: r.wordId,
                         selectedOptions: Object.assign({}, r.selectedOptions || {})
                     })),
-                    translation: builderState.lastBuilt.meaning
+                    translation: translationValue
                 };
                 currentLanguage.sentences.push(newSent);
                 saveData();
@@ -7439,6 +7589,88 @@ window.openEvolutionModalForWord = (wordId) => {
             });
             // Initial render of fields
             updateBuilderFields();
+            // ==================== Custom Modifiers UI ====================
+            // After rendering the base sentence fields, append a section for selecting
+            // adjectives (for subject and object) and an adverb.  Each modifier
+            // includes a position selector allowing placement before or after its head.
+            const modifierSection = document.createElement('div');
+            modifierSection.id = 'sentenceModifiers';
+            modifierSection.className = 'mt-3 space-y-3';
+            modifierSection.innerHTML = `
+                <div class="p-3 border border-indigo-300 rounded-md bg-white">
+                    <div class="mb-1"><strong>คำคุณศัพท์ ประธาน:</strong></div>
+                    <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                        <select id="subjectAdjSelect" class="p-2 border border-indigo-300 rounded-md flex-grow text-sm">
+                            <option value="">--ไม่มี--</option>
+                        </select>
+                        <select id="subjectAdjPosSelect" class="p-2 border border-indigo-300 rounded-md text-sm">
+                            <option value="before">ข้างหน้า</option>
+                            <option value="after">ข้างหลัง</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="p-3 border border-indigo-300 rounded-md bg-white">
+                    <div class="mb-1"><strong>คำวิเศษณ์:</strong></div>
+                    <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                        <select id="adverbSelect" class="p-2 border border-indigo-300 rounded-md flex-grow text-sm">
+                            <option value="">--ไม่มี--</option>
+                        </select>
+                        <select id="adverbPosSelect" class="p-2 border border-indigo-300 rounded-md text-sm">
+                            <option value="before">ข้างหน้า</option>
+                            <option value="after">ข้างหลัง</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="p-3 border border-indigo-300 rounded-md bg-white" id="objectAdjContainer">
+                    <div class="mb-1"><strong>คำคุณศัพท์ กรรม:</strong></div>
+                    <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                        <select id="objectAdjSelect" class="p-2 border border-indigo-300 rounded-md flex-grow text-sm">
+                            <option value="">--ไม่มี--</option>
+                        </select>
+                        <select id="objectAdjPosSelect" class="p-2 border border-indigo-300 rounded-md text-sm">
+                            <option value="before">ข้างหน้า</option>
+                            <option value="after">ข้างหลัง</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            // Do not append the standalone modifier section; per-role modifier controls are now within each sentence row
+            // section.appendChild(modifierSection);
+            // Populate the adjective and adverb selects based on the lexicon.
+            function populateModifierSelects() {
+                const subjAdjSel = section.querySelector('#subjectAdjSelect');
+                const objAdjSel = section.querySelector('#objectAdjSelect');
+                const advSel = section.querySelector('#adverbSelect');
+                const resetSelect = (sel) => {
+                    if (!sel) return;
+                    const first = sel.options && sel.options[0];
+                    sel.innerHTML = '';
+                    if (first) sel.appendChild(first);
+                };
+                resetSelect(subjAdjSel);
+                resetSelect(objAdjSel);
+                resetSelect(advSel);
+                (currentLanguage.lexicon || []).forEach(entry => {
+                    const pos = (entry.partOfSpeech || '').toLowerCase();
+                    // Identify adjectives
+                    if (pos.includes('adj') || pos.includes('adject') || pos.includes('คุณศัพท์')) {
+                        const opt = document.createElement('option');
+                        opt.value = entry.id;
+                        opt.textContent = getOrthographicForm(entry);
+                        if (subjAdjSel) subjAdjSel.appendChild(opt.cloneNode(true));
+                        if (objAdjSel) objAdjSel.appendChild(opt.cloneNode(true));
+                    }
+                    // Identify adverbs
+                    if (pos.includes('adv') || pos.includes('adverb') || pos.includes('วิเศษ')) {
+                        const opt2 = document.createElement('option');
+                        opt2.value = entry.id;
+                        opt2.textContent = getOrthographicForm(entry);
+                        if (advSel) advSel.appendChild(opt2);
+                    }
+                });
+            }
+            // Removed call to populateModifierSelects() because modifier UI is now per-role
+            // Removed global modifier event listeners and visibility helpers; modifiers are handled within each row.
             // Render saved sentences list
             renderSavedSentences();
             // If an edit ID is provided, populate builder with that saved sentence
