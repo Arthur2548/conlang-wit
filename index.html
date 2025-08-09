@@ -290,6 +290,18 @@
                 ]
             },
             lexicon: [], // Words will have id, word (base phonemic form), customOrthography (optional), phonetics (detailed IPA), meaning, pos, gender, etymology, evolutionTimeline, dialectalForms, manualInflections
+            /**
+             * A collection of saved sentences for the language. Each sentence contains an
+             * identifier, a structure string (e.g. "SVO"), and an array of components.
+             * Each component stores which role it fulfills (S, V, O, etc), the
+             * dictionary word’s ID, and any selected inflection options for that word.  This
+             * property is initialized as an empty array for new languages and will be
+             * persisted in local storage alongside other language data.  When
+             * loading existing languages the ensureDeepStructure function will copy
+             * whatever sentences exist or fall back to this empty array if none are
+             * defined.
+             */
+            sentences: [],
             grammar: {
                 sentenceStructure: 'SVO',
                 partsOfSpeech: ['นาม', 'กริยา', 'วิเศษณ์', 'คุณศัพท์', 'สรรพนาม', 'สันธาน', 'บุพบท', 'อุทาน', ], 
@@ -349,6 +361,14 @@
         let nextActiveSoundChangeId = 1; 
         let nextToneId = 1;
         let nextTonePhonotacticId = 1;
+        // Unique ID generator for sentences in the sentence system. This counter will increment
+        // whenever a new sentence is saved. It helps assign a stable identifier to each
+        // sentence stored in the current language’s `sentences` array.  Without a separate
+        // counter the application would need to scan existing sentences to compute the next
+        // ID, which is inefficient when many sentences exist.  The counter is initialized
+        // when the page loads and persists for the session.  When loading existing
+        // languages the code will still respect the IDs stored on each sentence object.
+        let nextSentenceId = 1;
 
 
         let activeTab = 'phonology';
@@ -403,6 +423,11 @@
             { id: 'wordGen', name: '✍️ ระบบสร้างคำ', icon: 'fas fa-pencil-alt', contentFunc: renderWordGeneratorUI, menu: true },
             { id: 'grammar', name: '📖 ระบบไวยากรณ์', icon: 'fas fa-book', contentFunc: renderGrammarUI, menu: true },
             { id: 'dictionary', name: '📚 พจนานุกรม', icon: 'fas fa-atlas', contentFunc: renderDictionaryUI, menu: true },
+            // A dedicated tab for working with sentences.  Users can build sentences
+            // manually or randomly from the lexicon, apply inflection rules to each
+            // component, and save their creations.  See `renderSentenceUI` for the
+            // implementation details.
+            { id: 'sentence', name: '📝 ระบบประโยค', icon: 'fas fa-paragraph', contentFunc: renderSentenceUI, menu: true },
             { id: 'orthography', name: '🔤 ระบบอักษร', icon: 'fas fa-spell-check', contentFunc: renderOrthographyUI, menu: true },
             { id: 'etymology', name: '🌱 ศัพทมูลวิทยา', icon: 'fas fa-seedling', contentFunc: renderEtymologyUI, menu: true },
             { id: 'evolution', name: '⏳ วิวัฒนาการคำ', icon: 'fas fa-history', contentFunc: (container) => { renderEvolutionUI(container); }, menu: true },
@@ -6961,6 +6986,529 @@ window.openEvolutionModalForWord = (wordId) => {
             conlangOutput.value = conlangSentence.join(' ');
             thaiOutput.value = thaiSentence.join(' ');
         }
+
+        // ========== Begin Sentence System Implementation ==========
+        /**
+         * Compute the inflected phonetic and orthographic form of a word given a set
+         * of selected inflection options.  This helper examines all defined
+         * conjugation categories in the order they are declared and applies any
+         * manual overrides or inflection rules that match the selected option.  If
+         * no rule is found for a particular category the base form is preserved.
+         *
+         * @param {Object} wordEntry The dictionary entry for the base word.
+         * @param {Object} selectedOptions An object mapping categoryId -> option.
+         * @returns {Object} An object with `phonetic` (string) and `orthographic` (string) properties.
+         */
+        function computeInflectedForms(wordEntry, selectedOptions = {}) {
+            if (!wordEntry) return { phonetic: '', orthographic: '' };
+            let currentPhonetic = wordEntry.word;
+            const categories = (currentLanguage.grammar && currentLanguage.grammar.morphology && currentLanguage.grammar.morphology.conjugationCategories) || [];
+            categories.forEach(cat => {
+                const opt = selectedOptions && selectedOptions.hasOwnProperty(cat.id) ? selectedOptions[cat.id] : null;
+                if (!opt) return;
+                // Check for manual override on the word entry first
+                const key = cat.id + '_' + opt.replace(/\s+/g, '_');
+                if (wordEntry.manualInflections && wordEntry.manualInflections[key] && wordEntry.manualInflections[key].phonetic) {
+                    currentPhonetic = wordEntry.manualInflections[key].phonetic;
+                    return;
+                }
+                // Otherwise try to find a matching inflection rule
+                const rule = ((currentLanguage.grammar && currentLanguage.grammar.morphology && currentLanguage.grammar.morphology.conjugationRules) || []).find(r => {
+                    return r.categoryId === cat.id && r.categoryOption === opt && (
+                        r.partOfSpeech === wordEntry.partOfSpeech || (wordEntry.partOfSpeech && wordEntry.partOfSpeech.startsWith(r.partOfSpeech + ':'))
+                    );
+                });
+                if (rule) {
+                    currentPhonetic = applyInflectionRuleDefinition(currentPhonetic, rule);
+                }
+            });
+            const orthographic = getOrthographicForm({ word: currentPhonetic, customOrthography: null }, true, true);
+            return { phonetic: currentPhonetic, orthographic: orthographic };
+        }
+
+        /**
+         * Render the Sentence System tab.  This UI allows users to build sentences
+         * manually by selecting a sentence structure (e.g. SVO), choosing words
+         * from the lexicon for each role, optionally selecting inflection options
+         * for those words, and then generating the resulting sentence in the
+         * constructed language and Thai translation.  Users can save completed
+         * sentences for future reference.  If `editId` is provided, the builder
+         * will prepopulate itself with the saved sentence associated with that ID.
+         *
+         * @param {HTMLElement} container The tab content container where UI elements will be appended.
+         * @param {String|null} editId Optional ID of an existing sentence to load into the builder.
+         */
+        function renderSentenceUI(container, editId = null) {
+            // Ensure sentences array exists on the current language
+            if (!Array.isArray(currentLanguage.sentences)) {
+                currentLanguage.sentences = [];
+            }
+            // Update nextSentenceId based on existing sentences to avoid ID collisions
+            currentLanguage.sentences.forEach(s => {
+                if (s && typeof s.id === 'string' && s.id.startsWith('sent_')) {
+                    const num = parseInt(s.id.slice(5));
+                    if (!isNaN(num) && num >= nextSentenceId) {
+                        nextSentenceId = num + 1;
+                    }
+                }
+            });
+            // Clear the container to prepare new content
+            container.innerHTML = '';
+            const section = document.createElement('div');
+            section.className = 'space-y-4 p-3 border border-indigo-200 rounded-md bg-indigo-50';
+            section.innerHTML = `
+                <h3 class="text-lg font-semibold text-indigo-700">ระบบประโยค</h3>
+                <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                    <label class="text-sm font-medium text-indigo-700">โครงสร้างประโยค:</label>
+                    <select id="sentenceStructureSelect" class="p-2 border border-indigo-300 rounded-md text-sm flex-grow sm:flex-none"></select>
+                    <button id="randomFillSentenceBtn" class="btn-secondary bg-indigo-400 hover:bg-indigo-500 px-3 py-1 rounded-md text-sm whitespace-nowrap">สุ่มคำ</button>
+                </div>
+                <div id="sentenceBuilderFields" class="mt-2 space-y-3"></div>
+                <div class="flex flex-wrap gap-2 mt-3">
+                    <button id="buildSentenceBtn" class="btn-primary bg-indigo-600 hover:bg-indigo-700 px-3 py-2 rounded-md text-sm disabled:opacity-50" disabled>สร้างประโยค</button>
+                    <button id="saveSentenceBtn" class="btn-primary bg-indigo-600 hover:bg-indigo-700 px-3 py-2 rounded-md text-sm disabled:opacity-50" disabled>บันทึกประโยค</button>
+                </div>
+                <div id="sentenceOutputArea" class="mt-3 p-3 bg-white rounded shadow hidden">
+                    <div class="mb-1"><strong class="text-indigo-700">ประโยค (อักขรวิธี):</strong> <span id="sentenceOutputOrtho" class="font-mono"></span></div>
+                    <div><strong class="text-indigo-700">คำแปล:</strong> <span id="sentenceOutputMeaning"></span></div>
+                </div>
+                <div id="savedSentencesContainer" class="mt-4"></div>
+            `;
+            container.appendChild(section);
+            // Builder state tracks the current structure, selections and last built sentence
+            const builderState = {
+                structure: (currentLanguage.grammar && currentLanguage.grammar.sentenceStructure) ? currentLanguage.grammar.sentenceStructure : 'SVO',
+                roles: [],
+                lastBuilt: null
+            };
+            // Populate the structure dropdown with standard options and set current selection
+            const structSelect = section.querySelector('#sentenceStructureSelect');
+            if (structSelect) {
+                structSelect.innerHTML = '';
+                ['SVO','SOV','VSO','VOS','OSV','OVS'].forEach(optVal => {
+                    const optEl = document.createElement('option');
+                    optEl.value = optVal;
+                    optEl.textContent = optVal;
+                    if (optVal === builderState.structure) optEl.selected = true;
+                    structSelect.appendChild(optEl);
+                });
+                structSelect.addEventListener('change', () => {
+                    builderState.structure = structSelect.value;
+                    updateBuilderFields();
+                });
+            }
+            // Map sentence role letters to Thai descriptions for clarity
+            const roleNames = { 'S': 'ประธาน', 'V': 'กริยา', 'O': 'กรรม' };
+            /**
+             * Populate a datalist element with lexicon entries.  Each option's value
+             * uses the orthographic form for easy reading.  Data attributes store
+             * the base form and ID so that when a user selects a value we can
+             * retrieve the correct dictionary entry.
+             *
+             * @param {HTMLDataListElement} datalistEl The datalist to populate
+             */
+            function populateSentenceDatalist(datalistEl) {
+                if (!datalistEl) return;
+                datalistEl.innerHTML = '';
+                (currentLanguage.lexicon || []).forEach(entry => {
+                    const optionEl = document.createElement('option');
+                    optionEl.value = getOrthographicForm(entry);
+                    optionEl.dataset.wordid = entry.id;
+                    optionEl.dataset.baseform = entry.word;
+                    datalistEl.appendChild(optionEl);
+                });
+            }
+            /**
+             * Refresh the builder fields based on the currently selected structure.  This
+             * will recreate input rows for each role (S, V, O) and attach listeners to
+             * handle word selection and inflection option changes.  If builderState
+             * already has selections (for example when editing a saved sentence), they
+             * will be preserved and the inputs and selectors prepopulated.
+             */
+            function updateBuilderFields() {
+                const fieldsContainer = section.querySelector('#sentenceBuilderFields');
+                if (!fieldsContainer) return;
+                fieldsContainer.innerHTML = '';
+                builderState.roles = [];
+                // Iterate over each character in the structure string to set up roles
+                builderState.structure.split('').forEach((ch, idx) => {
+                    const roleObj = { role: ch, wordId: null, selectedOptions: {} };
+                    // If builderState.roles existed previously (e.g. editing), try to copy previous selections
+                    if (builderState.roles && builderState.roles[idx]) {
+                        roleObj.wordId = builderState.roles[idx].wordId;
+                        roleObj.selectedOptions = Object.assign({}, builderState.roles[idx].selectedOptions);
+                    }
+                    builderState.roles.push(roleObj);
+                    // Create a container for this role row
+                    const row = document.createElement('div');
+                    row.id = `sentenceRow_${idx}`;
+                    row.className = 'p-3 border border-indigo-300 rounded-md bg-white';
+                    const label = roleNames[ch] || ('บทบาท ' + ch);
+                    row.innerHTML = `
+                        <div class="mb-1"><strong>${label} (${ch})</strong></div>
+                        <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                            <input type="text" id="sentenceInput_${idx}" list="sentenceDatalist_${idx}" placeholder="เลือกหรือพิมพ์คำในพจนานุกรม" class="p-2 border border-indigo-300 rounded-md flex-grow text-sm" />
+                            <datalist id="sentenceDatalist_${idx}"></datalist>
+                            <div class="morph-selectors flex flex-wrap gap-2 mt-2 sm:mt-0"></div>
+                        </div>`;
+                    fieldsContainer.appendChild(row);
+                    // Populate datalist for this row
+                    const datalistEl = row.querySelector(`datalist#sentenceDatalist_${idx}`);
+                    populateSentenceDatalist(datalistEl);
+                    // Set input value if a word is already selected
+                    if (roleObj.wordId) {
+                        const wordEntry = (currentLanguage.lexicon || []).find(w => w.id === roleObj.wordId);
+                        if (wordEntry) {
+                            const inputEl = row.querySelector(`#sentenceInput_${idx}`);
+                            if (inputEl) inputEl.value = getOrthographicForm(wordEntry);
+                        }
+                    }
+                    // Event handlers for the input
+                    const inputEl = row.querySelector(`#sentenceInput_${idx}`);
+                    if (inputEl) {
+                        inputEl.addEventListener('change', () => { updateWordSelection(idx); });
+                        inputEl.addEventListener('blur', () => { updateWordSelection(idx); });
+                    }
+                    // Render morph selectors if a word is already selected
+                    if (roleObj.wordId) {
+                        renderMorphSelectors(idx);
+                    }
+                });
+                updateBuildButtons();
+            }
+            /**
+             * Update the word selection for a given role based on the current value of
+             * its input field.  This function looks up the dictionary entry that
+             * corresponds to the input either via the datalist option data attributes
+             * or by matching the orthographic/base forms.  Once a word is selected
+             * the morph selectors for that row are rebuilt.
+             *
+             * @param {number} index The index of the role in builderState.roles
+             */
+            function updateWordSelection(index) {
+                const role = builderState.roles[index];
+                const row = section.querySelector(`#sentenceRow_${index}`);
+                if (!row) return;
+                const inputEl = row.querySelector(`#sentenceInput_${index}`);
+                const datalistEl = row.querySelector(`datalist#sentenceDatalist_${index}`);
+                if (!inputEl || !datalistEl) return;
+                const value = inputEl.value.trim();
+                let selectedWordEntry = null;
+                // Try to match by datalist option first (exact match)
+                const matchOpt = Array.from(datalistEl.options || []).find(opt => opt.value === value || (opt.dataset.baseform && opt.dataset.baseform === value));
+                if (matchOpt && matchOpt.dataset.wordid) {
+                    selectedWordEntry = (currentLanguage.lexicon || []).find(w => w.id === parseInt(matchOpt.dataset.wordid));
+                }
+                // Fallback search in lexicon by orthographic or base form
+                if (!selectedWordEntry && value) {
+                    selectedWordEntry = (currentLanguage.lexicon || []).find(w => {
+                        return getOrthographicForm(w) === value || w.word === value;
+                    });
+                }
+                if (selectedWordEntry) {
+                    builderState.roles[index].wordId = selectedWordEntry.id;
+                } else {
+                    builderState.roles[index].wordId = null;
+                    builderState.roles[index].selectedOptions = {};
+                }
+                // Re-render morph selectors for this role
+                renderMorphSelectors(index);
+                updateBuildButtons();
+            }
+            /**
+             * Render the inflection selectors for a given role based on the word
+             * selected.  These selectors allow the user to choose inflection
+             * categories/options for the word (e.g. tense, number).  If no word is
+             * selected the selectors are cleared.  When options are changed the
+             * builderState is updated accordingly.
+             *
+             * @param {number} index The index of the role in builderState.roles
+             */
+            function renderMorphSelectors(index) {
+                const role = builderState.roles[index];
+                const row = section.querySelector(`#sentenceRow_${index}`);
+                if (!row) return;
+                const container = row.querySelector('.morph-selectors');
+                if (!container) return;
+                container.innerHTML = '';
+                if (!role.wordId) return;
+                const wordEntry = (currentLanguage.lexicon || []).find(w => w.id === role.wordId);
+                if (!wordEntry) return;
+                const pos = wordEntry.partOfSpeech || '';
+                const categories = (currentLanguage.grammar && currentLanguage.grammar.morphology && currentLanguage.grammar.morphology.conjugationCategories) || [];
+                const applicableCats = categories.filter(cat => {
+                    return cat.appliesToPOS.includes(pos) || cat.appliesToPOS.some(applied => pos.startsWith(applied + ':'));
+                });
+                applicableCats.forEach(cat => {
+                    const select = document.createElement('select');
+                    select.className = 'p-2 border border-indigo-300 rounded-md text-xs';
+                    select.dataset.catId = cat.id;
+                    select.dataset.roleIndex = index;
+                    let optionsHtml = `<option value="">-- ${cat.name} --</option>`;
+                    (cat.options || []).forEach(opt => {
+                        optionsHtml += `<option value="${opt}">${opt}</option>`;
+                    });
+                    select.innerHTML = optionsHtml;
+                    // Set previous selection if present
+                    if (role.selectedOptions && role.selectedOptions.hasOwnProperty(cat.id)) {
+                        select.value = role.selectedOptions[cat.id];
+                    }
+                    select.addEventListener('change', function() {
+                        const catId = this.dataset.catId;
+                        const rIdx = parseInt(this.dataset.roleIndex);
+                        const val = this.value;
+                        if (!builderState.roles[rIdx].selectedOptions) builderState.roles[rIdx].selectedOptions = {};
+                        if (val) {
+                            builderState.roles[rIdx].selectedOptions[catId] = val;
+                        } else {
+                            delete builderState.roles[rIdx].selectedOptions[catId];
+                        }
+                        updateBuildButtons();
+                    });
+                    container.appendChild(select);
+                });
+            }
+            /**
+             * Enable or disable the build and save buttons based on the current
+             * selections.  The build button requires all roles to have a word
+             * selected.  The save button requires that a sentence has been
+             * successfully built (stored in builderState.lastBuilt).
+             */
+            function updateBuildButtons() {
+                const buildBtn = section.querySelector('#buildSentenceBtn');
+                const saveBtn = section.querySelector('#saveSentenceBtn');
+                const allHaveWords = builderState.roles.every(r => !!r.wordId);
+                if (buildBtn) buildBtn.disabled = !allHaveWords;
+                if (saveBtn) saveBtn.disabled = !builderState.lastBuilt;
+            }
+            /**
+             * Generate the sentence based on the current selections.  The result is
+             * displayed in the output area and stored in builderState.lastBuilt so
+             * that it can be saved.  If a word is missing an alert will be shown.
+             */
+            function buildSentence() {
+                const allHave = builderState.roles.every(r => !!r.wordId);
+                if (!allHave) {
+                    alert('กรุณาเลือกคำให้ครบทุกตำแหน่ง');
+                    return;
+                }
+                const orthoParts = [];
+                const meaningParts = [];
+                builderState.roles.forEach(role => {
+                    const w = (currentLanguage.lexicon || []).find(x => x.id === role.wordId);
+                    if (!w) {
+                        orthoParts.push('(?)');
+                        meaningParts.push('(?)');
+                    } else {
+                        const inf = computeInflectedForms(w, role.selectedOptions);
+                        orthoParts.push(inf.orthographic);
+                        meaningParts.push(w.meaning || '');
+                    }
+                });
+                const orthoStr = orthoParts.join(' ');
+                const meaningStr = meaningParts.join(' ');
+                const outputArea = section.querySelector('#sentenceOutputArea');
+                const outOrtho = section.querySelector('#sentenceOutputOrtho');
+                const outMeaning = section.querySelector('#sentenceOutputMeaning');
+                if (outOrtho) outOrtho.textContent = orthoStr;
+                if (outMeaning) outMeaning.textContent = meaningStr;
+                if (outputArea) outputArea.classList.remove('hidden');
+                builderState.lastBuilt = { orthographic: orthoStr, meaning: meaningStr };
+                updateBuildButtons();
+            }
+            /**
+             * Save the last built sentence into the language’s sentences array.  A
+             * unique ID is assigned using nextSentenceId.  After saving, the
+             * saved sentences list is refreshed.  The save button is disabled
+             * again until a new build is performed.
+             */
+            function saveSentence() {
+                if (!builderState.lastBuilt) return;
+                const newId = 'sent_' + (nextSentenceId++);
+                const newSent = {
+                    id: newId,
+                    structure: builderState.structure,
+                    components: builderState.roles.map(r => ({
+                        role: r.role,
+                        wordId: r.wordId,
+                        selectedOptions: Object.assign({}, r.selectedOptions || {})
+                    })),
+                    translation: builderState.lastBuilt.meaning
+                };
+                currentLanguage.sentences.push(newSent);
+                saveData();
+                renderSavedSentences();
+                builderState.lastBuilt = null;
+                const saveBtn = section.querySelector('#saveSentenceBtn');
+                if (saveBtn) saveBtn.disabled = true;
+            }
+            /**
+             * Render the list of saved sentences in the language.  Each saved
+             * sentence will be displayed with its orthographic form, translation,
+             * structure and action buttons for editing or deletion.
+             */
+            function renderSavedSentences() {
+                const containerEl = section.querySelector('#savedSentencesContainer');
+                if (!containerEl) return;
+                containerEl.innerHTML = '<h4 class="text-md font-semibold text-indigo-700 mb-2">ประโยคที่บันทึกไว้</h4>';
+                const sentencesArr = currentLanguage.sentences || [];
+                if (!Array.isArray(sentencesArr) || sentencesArr.length === 0) {
+                    containerEl.innerHTML += '<p class="text-sm text-gray-500">ยังไม่มีประโยคที่บันทึกไว้</p>';
+                    return;
+                }
+                sentencesArr.forEach(sent => {
+                    // Compute forms each time for up-to-date inflections
+                    let orthoParts = [];
+                    let meaningParts = [];
+                    sent.components.forEach(comp => {
+                        const w = (currentLanguage.lexicon || []).find(x => x.id === comp.wordId);
+                        if (!w) {
+                            orthoParts.push('(?)');
+                            meaningParts.push('(?)');
+                        } else {
+                            const inf = computeInflectedForms(w, comp.selectedOptions || {});
+                            orthoParts.push(inf.orthographic);
+                            meaningParts.push(w.meaning || '');
+                        }
+                    });
+                    const orthoStr = orthoParts.join(' ');
+                    const meaningStr = meaningParts.join(' ');
+                    const row = document.createElement('div');
+                    row.className = 'p-3 border border-indigo-300 rounded-md bg-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2';
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'flex-grow';
+                    infoDiv.innerHTML = `<div class="font-mono text-sm text-indigo-700">${orthoStr}</div><div class="text-sm text-gray-700">${meaningStr}</div><div class="text-xs text-gray-500">โครงสร้าง: ${sent.structure}</div>`;
+                    const actions = document.createElement('div');
+                    actions.className = 'flex gap-2';
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'text-indigo-500 hover:text-indigo-700 text-sm';
+                    editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+                    editBtn.title = 'แก้ไขประโยค';
+                    editBtn.addEventListener('click', () => { editSentence(sent.id); });
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'text-red-500 hover:text-red-700 text-sm';
+                    delBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                    delBtn.title = 'ลบประโยค';
+                    delBtn.addEventListener('click', () => {
+                        if (confirm('ลบประโยคนี้หรือไม่?')) {
+                            deleteSentence(sent.id);
+                        }
+                    });
+                    actions.appendChild(editBtn);
+                    actions.appendChild(delBtn);
+                    row.appendChild(infoDiv);
+                    row.appendChild(actions);
+                    containerEl.appendChild(row);
+                });
+            }
+            // Attach click handlers for buttons
+            const buildBtnEl = section.querySelector('#buildSentenceBtn');
+            if (buildBtnEl) buildBtnEl.addEventListener('click', buildSentence);
+            const saveBtnEl = section.querySelector('#saveSentenceBtn');
+            if (saveBtnEl) saveBtnEl.addEventListener('click', saveSentence);
+            const randomBtnEl = section.querySelector('#randomFillSentenceBtn');
+            if (randomBtnEl) randomBtnEl.addEventListener('click', () => {
+                // For each role, pick a random appropriate word from lexicon
+                builderState.roles.forEach((r, idx) => {
+                    let wordEntry = null;
+                    // Determine POS from role
+                    if (r.role === 'S' || r.role === 'O') {
+                        let candidates = (currentLanguage.lexicon || []).filter(w => (w.partOfSpeech || '').toLowerCase().startsWith('นาม'));
+                        if (candidates.length === 0) candidates = currentLanguage.lexicon || [];
+                        if (candidates.length > 0) wordEntry = candidates[Math.floor(Math.random() * candidates.length)];
+                    } else if (r.role === 'V') {
+                        let candidates = (currentLanguage.lexicon || []).filter(w => (w.partOfSpeech || '').toLowerCase().startsWith('กริยา'));
+                        if (candidates.length === 0) candidates = currentLanguage.lexicon || [];
+                        if (candidates.length > 0) wordEntry = candidates[Math.floor(Math.random() * candidates.length)];
+                    }
+                    if (!wordEntry && (currentLanguage.lexicon || []).length > 0) {
+                        wordEntry = (currentLanguage.lexicon || [])[Math.floor(Math.random() * (currentLanguage.lexicon || []).length)];
+                    }
+                    if (wordEntry) {
+                        builderState.roles[idx].wordId = wordEntry.id;
+                        builderState.roles[idx].selectedOptions = {};
+                        const inputEl = section.querySelector(`#sentenceInput_${idx}`);
+                        if (inputEl) inputEl.value = getOrthographicForm(wordEntry);
+                        renderMorphSelectors(idx);
+                    }
+                });
+                builderState.lastBuilt = null;
+                const outArea = section.querySelector('#sentenceOutputArea');
+                if (outArea) outArea.classList.add('hidden');
+                updateBuildButtons();
+            });
+            // Initial render of fields
+            updateBuilderFields();
+            // Render saved sentences list
+            renderSavedSentences();
+            // If an edit ID is provided, populate builder with that saved sentence
+            if (editId) {
+                const toEdit = (currentLanguage.sentences || []).find(s => s.id === editId);
+                if (toEdit) {
+                    builderState.structure = toEdit.structure;
+                    if (structSelect) structSelect.value = toEdit.structure;
+                    updateBuilderFields();
+                    // Copy values into builder
+                    toEdit.components.forEach((comp, idx) => {
+                        if (builderState.roles[idx]) {
+                            builderState.roles[idx].role = comp.role;
+                            builderState.roles[idx].wordId = comp.wordId;
+                            builderState.roles[idx].selectedOptions = Object.assign({}, comp.selectedOptions || {});
+                            const inputEl = section.querySelector(`#sentenceInput_${idx}`);
+                            const wordEntry = (currentLanguage.lexicon || []).find(w => w.id === comp.wordId);
+                            if (inputEl && wordEntry) {
+                                inputEl.value = getOrthographicForm(wordEntry);
+                            }
+                            renderMorphSelectors(idx);
+                        }
+                    });
+                    builderState.lastBuilt = null;
+                    const outArea = section.querySelector('#sentenceOutputArea');
+                    if (outArea) outArea.classList.add('hidden');
+                    updateBuildButtons();
+                }
+            }
+        }
+        /**
+         * Delete a sentence by its ID from the current language and refresh the
+         * sentence tab if it is currently active.  This function is attached to
+         * the window object so that it can be referenced from inline onclick
+         * handlers generated in the saved sentences list.
+         *
+         * @param {String} id The identifier of the sentence to remove
+         */
+        window.deleteSentence = function(id) {
+            const arr = currentLanguage.sentences || [];
+            const idx = arr.findIndex(s => s.id === id);
+            if (idx > -1) {
+                arr.splice(idx, 1);
+                saveData();
+                if (activeTab === 'sentence') {
+                    renderSentenceUI(tabContentContainer);
+                }
+            }
+        };
+        /**
+         * Begin editing a saved sentence.  This will reload the sentence tab and
+         * prepopulate the builder with the contents of the selected sentence.  The
+         * function is attached to the window object so that it can be referenced
+         * from inline onclick handlers.  Editing always switches to the sentence
+         * tab if not already active.
+         *
+         * @param {String} id The identifier of the sentence to edit
+         */
+        window.editSentence = function(id) {
+            // Ensure we are on the sentence tab; switching tabs triggers re-render
+            if (activeTab !== 'sentence') {
+                switchTab('sentence');
+            }
+            // After switching, the tab’s content will be regenerated.  Use a small
+            // timeout to allow the content to mount before loading the edit state.
+            setTimeout(() => {
+                renderSentenceUI(tabContentContainer, id);
+            }, 50);
+        };
+        // ========== End Sentence System Implementation ==========
 
         function exportDataAsJSON(data, filename) {
             const jsonData = JSON.stringify(data, null, 2);
