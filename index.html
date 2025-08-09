@@ -3895,14 +3895,18 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
                     const currentManualOverride = word.manualInflections[manualInflectionKey];
 
                     let ruleBasedPhonetic = word.word;
+                    let ruleBasedOrthographic = getOrthographicForm(word, true, true);
                     const rule = currentLanguage.grammar.morphology.conjugationRules.find(r =>
                         (r.partOfSpeech === wordPOS || wordPOS.startsWith(r.partOfSpeech+":")) &&
                         r.categoryId === cat.id && r.categoryOption === option
                     );
-                    if (rule) ruleBasedPhonetic = applyInflectionRuleDefinition(word.word, rule);
-
-                    // Rule-based orthographic form using the first grapheme rule for consistency.
-                    const ruleBasedOrthographic = getOrthographicForm({word: ruleBasedPhonetic, customOrthography: null}, true, true);
+                    if (rule) {
+                        // Apply rules separately on phonemic and orthographic bases
+                        ruleBasedPhonetic = applyInflectionRuleDefinition(word.word, rule);
+                        const baseOrthForm = getOrthographicForm(word, true, true);
+                        ruleBasedOrthographic = applyInflectionRuleDefinition(baseOrthForm, rule);
+                    }
+                    // NOTE: orthographic inflection is now based on the orthographic form, not mapped from phonetics.
 
                     const initialOrthoValue = currentManualOverride?.orthographic || ruleBasedOrthographic;
                     const initialPhoneticValue = currentManualOverride?.phonetic || ruleBasedPhonetic;
@@ -7224,7 +7228,12 @@ window.openEvolutionModalForWord = (wordId) => {
             alert("คุณเลือกชนิดของคำ: " + selectedTypes.join(", "));
         }
 
-        
+ function playIPA(ipaText) {
+    const encoded = encodeURIComponent(ipaText);
+    const url = `https://www.capyschool.com/th/reader?ipa=${encoded}`;
+    window.open(url, '_blank');
+}
+       
     </script>
 </body>
 </html>
