@@ -6,6 +6,8 @@
     <title>โปรแกรมประดิษฐภาษา</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <!-- AWS SDK for Polly -->
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1372.0.min.js"></script>
     <style>
         body {
             font-family: 'Inter', 'Kanit', sans-serif;
@@ -4275,7 +4277,17 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
                 cells += `
                     <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700 font-semibold">${isLogographic ? displayWord : `<a href=\"#\" class=\"text-purple-600 hover:underline\" onclick=\"event.preventDefault(); showWordDetailPopup(${entry.id})\">${displayWord}</a>`}</td>
                     <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500 font-mono">${entry.word}</td>
-                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500 font-mono">${entry.phonetics || 'N/A'}</td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500 font-mono">
+                        ${entry.phonetics 
+                            ? `<div class="flex items-center flex-wrap dict-phonetic-container" data-phonetic="${entry.phonetics}">
+                                <span class="mr-1">${entry.phonetics}</span>
+                                <button type="button" class="text-blue-500 ml-1 dict-phonetics-btn"><i class="fas fa-headphones"></i></button>
+                                <span class="text-xs text-blue-500 ml-1 cursor-pointer dict-phonetics-btn">คลิกเพื่อฟังเสียง</span>
+                                <select class="voice-select ml-1 text-xs p-0.5 border rounded"></select>
+                            </div>`
+                            : 'N/A'
+                        }
+                    </td>
                     <td class="px-4 py-2 text-sm text-gray-700">${entry.meaning}</td>
                     <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">${entry.partOfSpeech} ${entry.gender ? `(${entry.gender})` : ''}</td>
                     <td class="px-4 py-2 text-sm text-gray-500 hidden sm:table-cell">${entry.example || 'N/A'}</td>
@@ -4286,25 +4298,22 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
                     </td>
                 `;
                 row.innerHTML = cells;
-                // After injecting the row HTML, append a headphone icon to the phonetics cell
-                // if a phonetic transcription exists. Determine the index of the phonetic
-                // column based on whether logographic display is enabled.
-                const phoneticValue = entry.phonetics;
-                // Column order: [logograph?], [orthographic], [base phonemic], [phonetic], [meaning], ...
-                if (phoneticValue) {
-                    const phoneticIndex = isLogographic ? 3 : 2;
-                    const targetCell = row.cells && row.cells[phoneticIndex];
-                    if (targetCell) {
-                        const ipaBtn = document.createElement('button');
-                        ipaBtn.type = 'button';
-                        ipaBtn.className = 'ml-1 text-purple-600';
-                        ipaBtn.innerHTML = '<i class="fas fa-headphones"></i>';
-                        ipaBtn.addEventListener('click', () => openIPA(phoneticValue));
-                        targetCell.appendChild(ipaBtn);
-                    }
-                }
             });
             container.appendChild(table);
+            // Attach phonetics play events and populate voice selects for dictionary
+            const dictButtons = table.querySelectorAll('.dict-phonetics-btn');
+            dictButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const wrapper = btn.closest('.dict-phonetic-container');
+                    const phon = wrapper ? wrapper.getAttribute('data-phonetic') : '';
+                    const voiceSel = wrapper ? wrapper.querySelector('select.voice-select') : null;
+                    const voiceName = voiceSel ? voiceSel.value : null;
+                    speakPhonetics(phon, voiceName);
+                });
+            });
+            if (typeof updateVoiceSelects === 'function') {
+                updateVoiceSelects();
+            }
             container.innerHTML += `<p class="text-xs text-gray-400 mt-1">แสดง ${lexiconSubset.length} จาก ${currentLanguage.lexicon.length} คำ</p>`;
         }
         
@@ -4362,28 +4371,12 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
                 { label: 'คำไวพจน์ (Synonyms)', value: word.synonyms ? word.synonyms.join(', ') : null }
             );
             fields.forEach(field => {
-    if (field.value && field.value.toString().trim() !== '') {
-        if (field.label.includes('การออกเสียง') || field.label.toLowerCase().includes('phonetic')) {
-            const ipaVal = field.value.toString();
-            // Avoid inline JS with raw text — use data-ipa attribute and bind later
-            const safeAttr = ipaVal
-                .replace(/&/g, '&amp;')
-                .replace(/"/g, '&quot;');
-            contentHtml += `<div class="word-detail-popup-field flex items-start gap-2">
-                <strong class="text-purple-600 mt-0.5">${field.label}:</strong>
-                <span class="font-mono break-words">${ipaVal}</span>
-                <button type="button"
-                    class="ml-2 inline-flex items-center gap-1 text-purple-600 hover:text-purple-800 underline btn-ipa-open"
-                    data-ipa="${safeAttr}"
-                    title="เปิดโปรแกรมสัทอักษร">
-                    <i class="fas fa-headphones"></i><span class="text-xs">ฟัง/เปิด</span>
-                </button>
-            </div>`;
-        } else {
-            contentHtml += `<div class="word-detail-popup-field"><strong class="text-purple-600">${field.label}:</strong> ${field.value}</div>`;
-        }
-    }
-});if (word.etymology) {
+                if (field.value && field.value.toString().trim() !== '') {
+                    contentHtml += `<div class="word-detail-popup-field"><strong class="text-purple-600">${field.label}:</strong> ${field.value}</div>`;
+                }
+            });
+        
+            if (word.etymology) {
                 let etymologyHtml = '';
                 if (word.etymology.notes) etymologyHtml += `<p class="text-xs"><strong>หมายเหตุ:</strong> ${word.etymology.notes}</p>`;
                 if (word.etymology.roots && word.etymology.roots.length > 0) {
@@ -4417,13 +4410,6 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
             const hasDialectForms = word.dialectalForms && word.dialectalForms.length > 0;
 
             wordDetailContent.innerHTML = contentHtml || '<p class="text-gray-500">ไม่มีรายละเอียดเพิ่มเติม</p>';
-            // Bind IPA open buttons inside the word detail popup
-            wordDetailContent.querySelectorAll('.btn-ipa-open').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const ipa = btn.dataset.ipa || '';
-                    openIPA(ipa);
-                });
-            });
         
             wordDetailButtons.innerHTML = `
                 <button class="btn-secondary text-xs" onclick="openEtymologyTreeForWord(${word.id})"><i class="fas fa-seedling mr-1"></i> ดูผังศัพทมูลวิทยา</button>
@@ -4654,11 +4640,11 @@ window.openEvolutionModalForWord = (wordId) => {
                         </div>
                         <div>
                             <label class="block text-sm font-medium">การออกเสียง (Phonetics - รูปแบบละเอียด):</label>
-                            <div class="flex items-center">
-                                <!-- Input for detailed phonetics. Flex-grow ensures the input takes available space next to the button. -->
-                                <input type="text" id="modalPhonetics" value="${initialPhonetics}" class="flex-grow p-2 border rounded-md font-mono" placeholder="/พยางค์1.พยางค์2/" />
-                                <!-- Button to open the external IPA helper. Uses openIPA to launch the helper in a new tab. -->
-                                <button type="button" class="ml-2 text-purple-600" onclick="openIPA(document.getElementById('modalPhonetics').value)"><i class="fas fa-headphones"></i></button>
+                            <div class="flex items-center flex-wrap mt-1">
+                                <input type="text" id="modalPhonetics" value="${initialPhonetics}" class="flex-grow p-2 border rounded-md font-mono" placeholder="/พยางค์1.พยางค์2/">
+                                <button type="button" class="text-blue-500 ml-2 modal-phonetics-btn"><i class="fas fa-headphones"></i></button>
+                                <span class="text-xs text-blue-500 ml-1 cursor-pointer modal-phonetics-btn">คลิกเพื่อฟังเสียง</span>
+                                <select id="modalPhoneticsVoiceSelect" class="voice-select ml-1 text-xs p-1 border rounded"></select>
                             </div>
                         </div>
                         <div><label class="block text-sm font-medium">ความหมาย:</label><input type="text" id="modalMeaning" value="${initialMeaning}" class="w-full p-2 border rounded-md"></div>
@@ -6357,15 +6343,7 @@ window.openEvolutionModalForWord = (wordId) => {
                     </div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
-                    <div>
-                        <label class="text-xs">รูปเสียง (Phonetic):</label>
-                        <div class="flex items-center">
-                            <!-- Input for the dialect phonetic representation. Flex-grow so it sizes alongside the button. -->
-                            <input type="text" class="flex-grow p-1 border rounded text-sm dialect-phonetic font-mono" value="${dialectForm.phonetic || ''}">
-                            <!-- Headphone button to open the IPA helper for this dialect form. It reads the previous sibling's value. -->
-                            <button type="button" class="ml-1 text-purple-600" onclick="openIPA(this.previousElementSibling.value)"><i class="fas fa-headphones"></i></button>
-                        </div>
-                    </div>
+                    <div><label class="text-xs">รูปเสียง (Phonetic):</label><input type="text" class="w-full p-1 border rounded text-sm dialect-phonetic font-mono" value="${dialectForm.phonetic || ''}"></div>
                     <div><label class="text-xs">รูปเขียน (Orthographic):</label><input type="text" class="w-full p-1 border rounded text-sm dialect-orthographic font-mono" value="${dialectForm.orthographic || ''}"></div>
                 </div>
                 <div><label class="text-xs mt-1">ความหมาย (ถ้าต่างจากมาตรฐาน):</label><input type="text" class="w-full p-1 border rounded text-sm dialect-meaning" value="${dialectForm.meaning_diff || ''}"></div>
@@ -8064,30 +8042,138 @@ window.openEvolutionModalForWord = (wordId) => {
             alert("คุณเลือกชนิดของคำ: " + selectedTypes.join(", "));
         }
 
-        /**
-         * Opens the external IPA helper page with the provided IPA string prefilled.
-         * The helper page will open in a new tab so the user can easily return
-         * to the current application. Special characters are URL‑encoded.
-         *
-         * @param {string} ipaText The IPA string or phonetic transcription to send to the helper page.
-         */
-        function openIPA(ipaText) {
-            const encoded = encodeURIComponent(ipaText || '');
-            // Use the create‑ipa helper hosted by the project author. Passing the
-            // IPA as a query parameter lets the page prefill the input field.
-            window.open(`https://arthur2548.github.io/create-ipa/?ipa=${encoded}`, '_blank');
-        }
-
-        /**
-         * Backwards compatibility: retain the playIPA function name but delegate
-         * to openIPA. Existing calls elsewhere in the code will still work.
-         *
-         * @param {string} ipaText The IPA string to play.
-         */
-        function playIPA(ipaText) {
-            openIPA(ipaText);
-        }
+ function playIPA(ipaText) {
+    const encoded = encodeURIComponent(ipaText);
+    const url = `https://www.capyschool.com/th/reader?ipa=${encoded}`;
+    window.open(url, '_blank');
+}
        
+    </script>
+    <!-- AWS Polly Integration and Voice Controls -->
+    <script>
+    // Identity and region configuration for AWS Polly
+    AWS.config.region = 'us-east-1';
+    AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+        IdentityPoolId: 'us-east-1:26efe72d-52dc-48c6-9b9e-406755272318',
+    });
+    const polly = new AWS.Polly({ apiVersion: '2016-06-10' });
+
+    // Language map to Thai names
+    const languageMap = {
+        "American English": "อังกฤษ (สหรัฐ)", "Australian English": "อังกฤษ (ออสเตรเลีย)",
+        "British English": "อังกฤษ (สหราชอาณาจักร)", "Indian English": "อังกฤษ (อินเดีย)",
+        "New Zealand English": "อังกฤษ (นิวซีแลนด์)", "South African English": "อังกฤษ (แอฟริกาใต้)",
+        "Welsh English": "อังกฤษ (เวลส์)", "Arabic": "อาหรับ", "Chinese Mandarin": "จีนกลาง",
+        "Cantonese": "จีนกวางตุ้ง", "Danish": "เดนมาร์ก", "Dutch": "ดัตช์", "French": "ฝรั่งเศส",
+        "Canadian French": "ฝรั่งเศส (แคนาดา)", "German": "เยอรมัน", "Hindi": "ฮินดี",
+        "Icelandic": "ไอซ์แลนด์", "Italian": "อิตาลี", "Japanese": "ญี่ปุ่น", "Korean": "เกาหลี",
+        "Norwegian": "นอร์เวย์", "Polish": "โปแลนด์", "Brazilian Portuguese": "โปรตุเกส (บราซิล)",
+        "European Portuguese": "โปรตุเกส (ยุโรป)", "Romanian": "โรมาเนีย", "Russian": "รัสเซีย","Portuguese": "โปรตุเกส",
+        "Spanish": "สเปน", "Castilian Spanish": "สเปน (คาสตีล)", "Mexican Spanish": "สเปน (เม็กซิโก)",
+        "US Spanish": "สเปน (สหรัฐฯ)", "US English": "อังกฤษ (สหรัฐฯ)", "Swedish": "สวีเดน",
+        "Turkish": "ตุรกี", "Welsh": "เวลส์"
+    };
+
+    let pollyVoices = [];
+
+    function loadPollyVoices() {
+        polly.describeVoices({ Engine: 'standard' }, function(err, data) {
+            if (err) {
+                console.error('Could not get voices', err);
+                return;
+            }
+            pollyVoices = (data.Voices || []).sort((a, b) => {
+                const langA = languageMap[a.LanguageName] || a.LanguageName;
+                const langB = languageMap[b.LanguageName] || b.LanguageName;
+                const nameA = `${langA} - ${a.Name} (${a.Gender[0]})`;
+                const nameB = `${langB} - ${b.Name} (${b.Gender[0]})`;
+                return nameA.localeCompare(nameB, 'th');
+            });
+            populateVoiceSelects();
+        });
+    }
+
+    function populateVoiceSelects() {
+        document.querySelectorAll('select.voice-select').forEach(sel => {
+            const previous = sel.value;
+            sel.innerHTML = '';
+            pollyVoices.forEach(voice => {
+                const langName = languageMap[voice.LanguageName] || voice.LanguageName;
+                const text = `${langName} - ${voice.Name} (${voice.Gender === 'Female' ? 'หญิง' : 'ชาย'})`;
+                const option = document.createElement('option');
+                option.value = voice.Id;
+                option.textContent = text;
+                sel.appendChild(option);
+            });
+            if (previous) sel.value = previous;
+            if (!sel.value && pollyVoices.length > 0) sel.value = pollyVoices[0].Id;
+        });
+    }
+
+    // updateVoiceSelects alias for backward compatibility
+    function updateVoiceSelects() {
+        populateVoiceSelects();
+    }
+
+    function speakWithPolly(ipaText, voiceId) {
+        if (!ipaText) return;
+        const clean = String(ipaText).replace(/[\\/ˈˌ]/g, '').trim();
+        const ssml = `<speak><phoneme alphabet='ipa' ph='${clean}'></phoneme></speak>`;
+        const presigner = new AWS.Polly.Presigner({}, polly);
+        const params = {
+            OutputFormat: 'mp3',
+            SampleRate: '16000',
+            Text: ssml,
+            TextType: 'ssml',
+            VoiceId: voiceId || (pollyVoices.length > 0 ? pollyVoices[0].Id : 'Salli')
+        };
+        presigner.getSynthesizeSpeechUrl(params, (err, url) => {
+            if (err) {
+                console.error('AWS Polly Error:', err);
+            } else {
+                const audio = new Audio(url);
+                audio.play().catch(e => console.warn('Autoplay blocked:', e));
+            }
+        });
+    }
+
+    // Override global speakPhonetics to Polly version
+    window.speakPhonetics = function(ipa, voiceId) {
+        speakWithPolly(ipa, voiceId);
+    };
+
+    // Attach global click handler for audio controls
+    document.addEventListener('click', function(e) {
+        const target = e.target.closest('.modal-phonetics-btn, .dict-phonetics-btn, .dialect-phonetics-btn, .dialect-audio-btn');
+        if (target) {
+            // Determine the wrapper that holds data-phonetic attribute
+            let wrapper = target.closest('[data-phonetic]');
+            let phon = '';
+            let voiceSel = null;
+            if (wrapper) {
+                phon = wrapper.getAttribute('data-phonetic') || '';
+                voiceSel = wrapper.querySelector('select.voice-select');
+            }
+            // If wrapper not found or no phonetic attribute, try to find input
+            if (!phon) {
+                const input = target.closest('div').querySelector('input[type="text"]');
+                if (input) phon = input.value || '';
+            }
+            const voiceName = voiceSel ? voiceSel.value : null;
+            speakPhonetics(phon, voiceName);
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load voices after credentials
+        AWS.config.credentials.get(function(err) {
+            if (err) {
+                console.error('Cognito creds error:', err);
+            } else {
+                loadPollyVoices();
+            }
+        });
+    });
     </script>
 </body>
 </html>
