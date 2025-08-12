@@ -4279,11 +4279,12 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
                     <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500 font-mono">${entry.word}</td>
                     <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500 font-mono">
                         ${entry.phonetics 
-                            ? `<div class="flex items-center flex-wrap dict-phonetic-container" data-phonetic="${entry.phonetics}">
+                            ? `<div class="flex items-center flex-wrap dict-phonetic-container" data-phonetic="${entry.phonetics}" data-voiceid="${entry.voiceId || ''}">
                                 <span class="mr-1">${entry.phonetics}</span>
                                 <button type="button" class="text-blue-500 ml-1 dict-phonetics-btn"><i class="fas fa-headphones"></i></button>
                                 <span class="text-xs text-blue-500 ml-1 cursor-pointer dict-phonetics-btn">คลิกเพื่อฟังเสียง</span>
-                                <select class="voice-select ml-1 text-xs p-0.5 border rounded"></select>
+                                <button type="button" class="accent-toggle-btn text-blue-500 ml-1" title="เปลี่ยนสำเนียง"><i class="fas fa-language"></i></button>
+                                <select class="voice-select ml-1 text-xs p-0.5 border rounded hidden" data-hide-after-select="true" data-selected-voice="${entry.voiceId || ''}"></select>
                             </div>`
                             : 'N/A'
                         }
@@ -4306,8 +4307,17 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
                 btn.addEventListener('click', () => {
                     const wrapper = btn.closest('.dict-phonetic-container');
                     const phon = wrapper ? wrapper.getAttribute('data-phonetic') : '';
-                    const voiceSel = wrapper ? wrapper.querySelector('select.voice-select') : null;
-                    const voiceName = voiceSel ? voiceSel.value : null;
+                    let voiceName = null;
+                    if (wrapper) {
+                        const voiceSel = wrapper.querySelector('select.voice-select');
+                        if (voiceSel && voiceSel.value) {
+                            voiceName = voiceSel.value;
+                        } else {
+                            // fallback to stored voiceId on wrapper if present
+                            const v = wrapper.getAttribute('data-voiceid');
+                            if (v) voiceName = v;
+                        }
+                    }
                     speakPhonetics(phon, voiceName);
                 });
             });
@@ -4372,7 +4382,20 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
             );
             fields.forEach(field => {
                 if (field.value && field.value.toString().trim() !== '') {
-                    contentHtml += `<div class="word-detail-popup-field"><strong class="text-purple-600">${field.label}:</strong> ${field.value}</div>`;
+                    // If this field represents phonetic details, render with audio and accent controls
+                    if (field.label && (field.label.includes('การออกเสียง') || field.label.toLowerCase().includes('phonetics'))) {
+                        const ipaValue = field.value.toString();
+                        contentHtml += `<div class="word-detail-popup-field"><strong class="text-purple-600">${field.label}:</strong> ` +
+                            `<div class="flex items-center flex-wrap dict-phonetic-container" data-phonetic="${ipaValue}" data-voiceid="${word.voiceId || ''}">` +
+                                `<span class="mr-1">${ipaValue}</span>` +
+                                `<button type="button" class="text-blue-500 ml-1 dict-phonetics-btn" title="ฟังเสียง"><i class="fas fa-headphones"></i></button>` +
+                                `<button type="button" class="accent-toggle-btn text-blue-500 ml-1" title="เปลี่ยนสำเนียง"><i class="fas fa-language"></i></button>` +
+                                `<select class="voice-select ml-1 text-xs p-0.5 border rounded hidden" data-hide-after-select="true" data-selected-voice="${word.voiceId || ''}"></select>` +
+                            `</div>` +
+                        `</div>`;
+                    } else {
+                        contentHtml += `<div class="word-detail-popup-field"><strong class="text-purple-600">${field.label}:</strong> ${field.value}</div>`;
+                    }
                 }
             });
         
@@ -4410,6 +4433,8 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
             const hasDialectForms = word.dialectalForms && word.dialectalForms.length > 0;
 
             wordDetailContent.innerHTML = contentHtml || '<p class="text-gray-500">ไม่มีรายละเอียดเพิ่มเติม</p>';
+            // Populate voice selections for any dropdowns within the word detail modal
+            if (typeof updateVoiceSelects === 'function') updateVoiceSelects();
         
             wordDetailButtons.innerHTML = `
                 <button class="btn-secondary text-xs" onclick="openEtymologyTreeForWord(${word.id})"><i class="fas fa-seedling mr-1"></i> ดูผังศัพทมูลวิทยา</button>
@@ -4644,7 +4669,7 @@ window.openEvolutionModalForWord = (wordId) => {
                                 <input type="text" id="modalPhonetics" value="${initialPhonetics}" class="flex-grow p-2 border rounded-md font-mono" placeholder="/พยางค์1.พยางค์2/">
                                 <button type="button" class="text-blue-500 ml-2 modal-phonetics-btn"><i class="fas fa-headphones"></i></button>
                                 <span class="text-xs text-blue-500 ml-1 cursor-pointer modal-phonetics-btn">คลิกเพื่อฟังเสียง</span>
-                                <select id="modalPhoneticsVoiceSelect" class="voice-select ml-1 text-xs p-1 border rounded"></select>
+                                <select id="modalPhoneticsVoiceSelect" class="voice-select ml-1 text-xs p-1 border rounded" data-selected-voice="${existingWord && existingWord.voiceId ? existingWord.voiceId : ''}"></select>
                             </div>
                         </div>
                         <div><label class="block text-sm font-medium">ความหมาย:</label><input type="text" id="modalMeaning" value="${initialMeaning}" class="w-full p-2 border rounded-md"></div>
@@ -4812,6 +4837,8 @@ window.openEvolutionModalForWord = (wordId) => {
                 }
             }
             document.body.appendChild(modal);
+            // After inserting the modal into the DOM, populate the voice selection drop-downs so users can choose accents
+            if (typeof updateVoiceSelects === 'function') updateVoiceSelects();
 
             const modalWordInput = modal.querySelector('#modalWord');
             const modalPhoneticsInput = modal.querySelector('#modalPhonetics');
@@ -4948,6 +4975,8 @@ window.openEvolutionModalForWord = (wordId) => {
                     gender: currentLanguage.grammar.hasGender && modal.querySelector('#modalGenderSection') && !modal.querySelector('#modalGenderSection').classList.contains('hidden') ? modal.querySelector('#modalGender').value : '',
                     example: modal.querySelector('#modalExample').value.trim(),
                     synonyms: modal.querySelector('#modalSynonyms').value.split(',').map(s => s.trim()).filter(s => s),
+                    // store the selected voice (accent) for this word. If the user did not select a voice, null or default will be stored.
+                    voiceId: (modal.querySelector('#modalPhoneticsVoiceSelect') && modal.querySelector('#modalPhoneticsVoiceSelect').value) ? modal.querySelector('#modalPhoneticsVoiceSelect').value : null,
                     etymology: {
                         roots: tempEtymologyRoots.filter(r => r.wordId || (r.customRoot && r.customRoot.trim() !== '')), 
                         notes: modal.querySelector('#modalEtymologyNotes').value.trim()
@@ -6127,7 +6156,11 @@ window.openEvolutionModalForWord = (wordId) => {
             const tbody = table.querySelector('tbody');
 
             let orthoRow = `<tr><td class="px-3 py-2 font-medium">รูปเขียน</td><td class="px-3 py-2 font-mono">${transliterateWordToSymbols(wordEntry.word)}</td>`;
-            let phoneticRow = `<tr><td class="px-3 py-2 font-medium">รูปเสียง</td><td class="px-3 py-2 font-mono">${wordEntry.word}</td>`; // word.word is base phonemic
+            // Build the phonetic row. Each cell will include a headphone icon to play the sound.
+            let phoneticRow = `<tr><td class="px-3 py-2 font-medium">รูปเสียง</td>`;
+            // Standard (base) phonetic form
+            const stdPhon = wordEntry.word || '';
+            phoneticRow += `<td class="px-3 py-2 font-mono"><div class="inline-flex items-center" data-phonetic="${stdPhon}" data-voiceid="${wordEntry.voiceId || ''}"><span>${stdPhon}</span><button type="button" class="text-blue-500 ml-1 dialect-phonetics-btn" title="ฟังเสียง"><i class="fas fa-headphones"></i></button></div></td>`;
 
             currentLanguage.regions.filter(r => r.toLowerCase() !== 'standard').forEach(region => {
                 const manualForm = (wordEntry.dialectalForms || []).find(df => df.regionName === region);
@@ -6150,7 +6183,9 @@ window.openEvolutionModalForWord = (wordId) => {
                     }
                 }
                 orthoRow += `<td class="px-3 py-2 font-mono">${dialectOrthographic} ${source}</td>`;
-                phoneticRow += `<td class="px-3 py-2 font-mono">${dialectPhonetic}</td>`;
+                // Sanitize the value for the data attribute (remove HTML tags) but keep original content for display
+                const sanitizedDialect = typeof dialectPhonetic === 'string' ? dialectPhonetic.replace(/<[^>]*>/g, '') : '';
+                phoneticRow += `<td class="px-3 py-2 font-mono"><div class="inline-flex items-center" data-phonetic="${sanitizedDialect}" data-voiceid="${wordEntry.voiceId || ''}"><span>${dialectPhonetic}</span><button type="button" class="text-blue-500 ml-1 dialect-phonetics-btn" title="ฟังเสียง"><i class="fas fa-headphones"></i></button></div></td>`;
             });
             orthoRow += `</tr>`;
             phoneticRow += `</tr>`;
@@ -7104,7 +7139,7 @@ window.openEvolutionModalForWord = (wordId) => {
                 </div>
                 <div id="sentenceOutputArea" class="mt-3 p-3 bg-white rounded shadow hidden">
                     <div class="mb-1"><strong class="text-indigo-700">ประโยค (อักขรวิธี):</strong> <span id="sentenceOutputOrtho" class="font-mono"></span></div>
-                    <div class="mb-1"><strong class="text-indigo-700">ประโยค (สัทอักษร):</strong> <span id="sentenceOutputPhonetic" class="font-mono"></span></div>
+                    <div class="mb-1 flex items-center"><strong class="text-indigo-700 mr-1">ประโยค (สัทอักษร):</strong> <div id="sentenceOutputPhoneticContainer" class="inline-flex items-center" data-phonetic=""><span id="sentenceOutputPhonetic" class="font-mono"></span><button type="button" class="text-blue-500 ml-1 dialect-phonetics-btn" title="ฟังเสียง"><i class="fas fa-headphones"></i></button></div></div>
                     <div><strong class="text-indigo-700">คำแปล:</strong> <input id="sentenceOutputMeaning" class="p-1 border border-indigo-300 rounded-md w-full mt-1 text-sm" /></div>
                 </div>
                 <div id="savedSentencesContainer" class="mt-4"></div>
@@ -7489,7 +7524,33 @@ window.openEvolutionModalForWord = (wordId) => {
                 const outPhon = section.querySelector('#sentenceOutputPhonetic');
                 const outMeaning = section.querySelector('#sentenceOutputMeaning');
                 if (outOrtho) outOrtho.textContent = orthoStr;
-                if (outPhon) outPhon.textContent = phoneticStr;
+                if (outPhon) {
+                    outPhon.textContent = phoneticStr;
+                    // Update the phonetic container's data attribute so audio plays the correct string
+                    const phonContainer = section.querySelector('#sentenceOutputPhoneticContainer');
+                    if (phonContainer) {
+                        phonContainer.setAttribute('data-phonetic', phoneticStr);
+                        // Determine voice for the sentence: use the first available voiceId from any word in the sentence
+                        let selectedVoiceForSentence = null;
+                        if (builderState && Array.isArray(builderState.roles)) {
+                            for (const roleItem of builderState.roles) {
+                                const wid = roleItem.wordId;
+                                if (wid) {
+                                    const w = (currentLanguage.lexicon || []).find(e => e.id === wid);
+                                    if (w && w.voiceId) {
+                                        selectedVoiceForSentence = w.voiceId;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (!selectedVoiceForSentence) {
+                            // Fallback to default
+                            selectedVoiceForSentence = DEFAULT_VOICE_ID;
+                        }
+                        phonContainer.setAttribute('data-voiceid', selectedVoiceForSentence || '');
+                    }
+                }
                 if (outMeaning) {
                     outMeaning.value = meaningStr;
                 }
@@ -8074,6 +8135,9 @@ window.openEvolutionModalForWord = (wordId) => {
         "Turkish": "ตุรกี", "Welsh": "เวลส์"
     };
 
+    // Default voice to be used when no explicit selection is provided. We choose the French voice "Léa".
+    const DEFAULT_VOICE_ID = 'Lea';
+
     let pollyVoices = [];
 
     function loadPollyVoices() {
@@ -8096,6 +8160,8 @@ window.openEvolutionModalForWord = (wordId) => {
     function populateVoiceSelects() {
         document.querySelectorAll('select.voice-select').forEach(sel => {
             const previous = sel.value;
+            // Preserve any data-selected-voice attribute before rebuilding options
+            const selectedAttr = sel.getAttribute('data-selected-voice');
             sel.innerHTML = '';
             pollyVoices.forEach(voice => {
                 const langName = languageMap[voice.LanguageName] || voice.LanguageName;
@@ -8105,8 +8171,19 @@ window.openEvolutionModalForWord = (wordId) => {
                 option.textContent = text;
                 sel.appendChild(option);
             });
-            if (previous) sel.value = previous;
-            if (!sel.value && pollyVoices.length > 0) sel.value = pollyVoices[0].Id;
+            // Determine which voice to select: explicit data-selected-voice attribute takes highest precedence,
+            // then previously selected value (if still present), otherwise fall back to default voice.
+            let targetVoice = null;
+            if (selectedAttr && Array.from(sel.options).some(opt => opt.value === selectedAttr)) {
+                targetVoice = selectedAttr;
+            } else if (previous && Array.from(sel.options).some(opt => opt.value === previous)) {
+                targetVoice = previous;
+            }
+            if (!targetVoice) {
+                const preferred = pollyVoices.find(v => v.Id === DEFAULT_VOICE_ID);
+                targetVoice = preferred ? preferred.Id : (pollyVoices.length > 0 ? pollyVoices[0].Id : '');
+            }
+            sel.value = targetVoice;
         });
     }
 
@@ -8125,7 +8202,8 @@ window.openEvolutionModalForWord = (wordId) => {
             SampleRate: '16000',
             Text: ssml,
             TextType: 'ssml',
-            VoiceId: voiceId || (pollyVoices.length > 0 ? pollyVoices[0].Id : 'Salli')
+            // Use provided voiceId if available, otherwise fall back to our predefined default.
+            VoiceId: voiceId || DEFAULT_VOICE_ID || (pollyVoices.length > 0 ? pollyVoices[0].Id : 'Salli')
         };
         presigner.getSynthesizeSpeechUrl(params, (err, url) => {
             if (err) {
@@ -8159,8 +8237,56 @@ window.openEvolutionModalForWord = (wordId) => {
                 const input = target.closest('div').querySelector('input[type="text"]');
                 if (input) phon = input.value || '';
             }
-            const voiceName = voiceSel ? voiceSel.value : null;
+            // If a voice selector wasn't found via the wrapper, look for one in the same container as the clicked control
+            if (!voiceSel) {
+                const parentDiv = target.closest('div');
+                if (parentDiv) {
+                    voiceSel = parentDiv.querySelector('select.voice-select');
+                }
+            }
+            // Determine voice: prefer explicit selection; otherwise use stored voiceId attribute on wrapper
+            let voiceName = null;
+            if (voiceSel && voiceSel.value) {
+                voiceName = voiceSel.value;
+            } else if (wrapper) {
+                const attrVoice = wrapper.getAttribute('data-voiceid');
+                if (attrVoice) {
+                    voiceName = attrVoice;
+                }
+            }
             speakPhonetics(phon, voiceName);
+        }
+    });
+
+    // Accent toggle logic: toggles the visibility of voice selection dropdowns for phonetics.
+    document.addEventListener('click', function(e) {
+        const toggleBtn = e.target.closest('.accent-toggle-btn');
+        if (toggleBtn) {
+            const container = toggleBtn.closest('[data-phonetic]');
+            if (container) {
+                const select = container.querySelector('select.voice-select');
+                if (select) {
+                    const isHidden = select.classList.contains('hidden') || select.style.display === 'none';
+                    if (isHidden) {
+                        select.classList.remove('hidden');
+                        select.style.display = 'inline-block';
+                    } else {
+                        select.classList.add('hidden');
+                        select.style.display = 'none';
+                    }
+                }
+            }
+        }
+    });
+
+    // When the user selects a new accent in a dropdown that should auto-hide, hide it afterwards.
+    document.addEventListener('change', function(e) {
+        const sel = e.target;
+        if (sel && sel.matches('select.voice-select') && sel.dataset.hideAfterSelect === 'true') {
+            setTimeout(() => {
+                sel.classList.add('hidden');
+                sel.style.display = 'none';
+            }, 0);
         }
     });
 
