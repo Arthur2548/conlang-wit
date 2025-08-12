@@ -4430,17 +4430,24 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
                 contentHtml += `<div class="word-detail-popup-field"><strong class="text-purple-600">วิวัฒนาการคำ (Evolution):</strong>${evolutionHtml}</div>`;
             }
         
+
             const hasDialectForms = word.dialectalForms && word.dialectalForms.length > 0;
+            // Determine if this word has an evolution timeline to display.  Used for showing the evolution overview button.
+            const hasEvolution = word.evolutionTimeline && word.evolutionTimeline.length > 0;
 
             wordDetailContent.innerHTML = contentHtml || '<p class="text-gray-500">ไม่มีรายละเอียดเพิ่มเติม</p>';
             // Populate voice selections for any dropdowns within the word detail modal
             if (typeof updateVoiceSelects === 'function') updateVoiceSelects();
         
-            wordDetailButtons.innerHTML = `
-                <button class="btn-secondary text-xs" onclick="openEtymologyTreeForWord(${word.id})"><i class="fas fa-seedling mr-1"></i> ดูผังศัพทมูลวิทยา</button>
-                <button class="btn-secondary text-xs" onclick="openEvolutionModalForWord(${word.id})"><i class="fas fa-history mr-1"></i> จัดการวิวัฒนาการคำ</button>
-                <button class="btn-secondary text-xs" onclick="openDialectModalForWord(${word.id})"><i class="fas fa-map-signs mr-1"></i> ${hasDialectForms ? 'ดู/แก้ไขภาษาถิ่น' : 'เพิ่มข้อมูลภาษาถิ่น'}</button>
-            `;
+            // Build the action buttons for the word detail popup.  Include the evolution overview button only when evolution data exists.
+            let detailButtonsHtml = '';
+            detailButtonsHtml += `<button class="btn-secondary text-xs" onclick="openEtymologyTreeForWord(${word.id})"><i class="fas fa-seedling mr-1"></i> ดูผังศัพทมูลวิทยา</button>`;
+            detailButtonsHtml += `<button class="btn-secondary text-xs" onclick="openEvolutionModalForWord(${word.id})"><i class="fas fa-history mr-1"></i> จัดการวิวัฒนาการคำ</button>`;
+            if (hasEvolution) {
+                detailButtonsHtml += `<button class="btn-secondary text-xs" onclick="showEvolutionDetailPopup(${word.id})"><i class="fas fa-stream mr-1"></i> วิวัฒนาการศัพท์</button>`;
+            }
+            detailButtonsHtml += `<button class="btn-secondary text-xs" onclick="openDialectModalForWord(${word.id})"><i class="fas fa-map-signs mr-1"></i> ${hasDialectForms ? 'ดู/แก้ไขภาษาถิ่น' : 'เพิ่มข้อมูลภาษาถิ่น'}</button>`;
+            wordDetailButtons.innerHTML = detailButtonsHtml;
             
             const wordPOS = word.partOfSpeech;
             const canConjugate = currentLanguage.grammar.morphology.conjugationCategories.some(cat => cat.appliesToPOS.includes(wordPOS) || cat.appliesToPOS.some(appliedPOS => wordPOS.startsWith(appliedPOS + ":")));
@@ -4649,6 +4656,20 @@ window.openEvolutionModalForWord = (wordId) => {
 
             // Detect if logographic system is selected
             const isLogographic = currentLanguage.orthography && currentLanguage.orthography.writingSystem === 'logographic';
+
+            // Build options for selecting the era that this word belongs to (base era).
+            let baseEraOptionsHtml = '';
+            const sortedErasForModal = (currentLanguage.eras || []).slice().sort((a,b) => (a.order || 0) - (b.order || 0));
+            sortedErasForModal.forEach(era => {
+                let selected = false;
+                if (existingWord && existingWord.baseEraId) {
+                    selected = (existingWord.baseEraId === era.id);
+                } else if (!existingWord && currentLanguage.evolution && currentLanguage.evolution.baseEra) {
+                    // When adding a new word, use the language's configured base era as default
+                    selected = (currentLanguage.evolution.baseEra === era.id);
+                }
+                baseEraOptionsHtml += `<option value="${era.id}" ${selected ? 'selected' : ''}>${era.name}</option>`;
+            });
             let logographImage = existingWord && existingWord.logographImage ? existingWord.logographImage : '';
             modal.innerHTML = `
                 <div class="modal-content p-6 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -4684,6 +4705,14 @@ window.openEvolutionModalForWord = (wordId) => {
                         </div>` : ''}
                         <div><label class="block text-sm font-medium">ตัวอย่างประโยค:</label><textarea id="modalExample" class="w-full p-2 border rounded-md">${initialExample}</textarea></div>
                         <div><label class="block text-sm font-medium">คำไวพจน์ (Synonyms - คั่นด้วยจุลภาค):</label><input type="text" id="modalSynonyms" value="${initialSynonyms}" class="w-full p-2 border rounded-md"></div>
+
+                        <!-- Base era selection for this word -->
+                        <div>
+                            <label class="block text-sm font-medium">ยุคของคำศัพท์ (ฐาน):</label>
+                            <select id="modalBaseEra" class="w-full p-2 border rounded-md text-sm">
+                                ${baseEraOptionsHtml}
+                            </select>
+                        </div>
                         <div id="etymologySectionModal">
                             <label class="block text-sm font-medium mb-1">ศัพทมูลวิทยา (Etymology):</label>
                             <div id="etymologyRootsContainerModal" class="space-y-2 mb-2"></div>
@@ -4965,26 +4994,28 @@ window.openEvolutionModalForWord = (wordId) => {
 
             modal.querySelector('#cancelWordModalBtn').onclick = () => modal.remove();
             modal.querySelector('#saveWordModalBtn').onclick = () => {
-                const updatedWord = {
-                    id: existingWord ? existingWord.id : nextWordId,
-                    word: modal.querySelector('#modalWord').value.trim(), 
-                    customOrthography: modal.querySelector('#modalCustomOrthography').value.trim() || null, // Set to null if empty
-                    phonetics: modal.querySelector('#modalPhonetics').value.trim(), 
-                    meaning: modal.querySelector('#modalMeaning').value.trim(),
-                    partOfSpeech: modal.querySelector('#modalPartOfSpeech').value,
-                    gender: currentLanguage.grammar.hasGender && modal.querySelector('#modalGenderSection') && !modal.querySelector('#modalGenderSection').classList.contains('hidden') ? modal.querySelector('#modalGender').value : '',
-                    example: modal.querySelector('#modalExample').value.trim(),
-                    synonyms: modal.querySelector('#modalSynonyms').value.split(',').map(s => s.trim()).filter(s => s),
-                    // store the selected voice (accent) for this word. If the user did not select a voice, null or default will be stored.
-                    voiceId: (modal.querySelector('#modalPhoneticsVoiceSelect') && modal.querySelector('#modalPhoneticsVoiceSelect').value) ? modal.querySelector('#modalPhoneticsVoiceSelect').value : null,
-                    etymology: {
-                        roots: tempEtymologyRoots.filter(r => r.wordId || (r.customRoot && r.customRoot.trim() !== '')), 
-                        notes: modal.querySelector('#modalEtymologyNotes').value.trim()
-                    },
-                    evolutionTimeline: (existingWord && existingWord.evolutionTimeline) ? existingWord.evolutionTimeline : [], 
-                    dialectalForms: (existingWord && existingWord.dialectalForms) ? existingWord.dialectalForms : [],
-                    ...(isLogographic ? { logographImage: logographImage || '' } : {})
-                };
+                    const updatedWord = {
+                        id: existingWord ? existingWord.id : nextWordId,
+                        word: modal.querySelector('#modalWord').value.trim(),
+                        customOrthography: modal.querySelector('#modalCustomOrthography').value.trim() || null, // Set to null if empty
+                        phonetics: modal.querySelector('#modalPhonetics').value.trim(),
+                        meaning: modal.querySelector('#modalMeaning').value.trim(),
+                        partOfSpeech: modal.querySelector('#modalPartOfSpeech').value,
+                        gender: currentLanguage.grammar.hasGender && modal.querySelector('#modalGenderSection') && !modal.querySelector('#modalGenderSection').classList.contains('hidden') ? modal.querySelector('#modalGender').value : '',
+                        example: modal.querySelector('#modalExample').value.trim(),
+                        synonyms: modal.querySelector('#modalSynonyms').value.split(',').map(s => s.trim()).filter(s => s),
+                        // store the selected voice (accent) for this word. If the user did not select a voice, null or default will be stored.
+                        voiceId: (modal.querySelector('#modalPhoneticsVoiceSelect') && modal.querySelector('#modalPhoneticsVoiceSelect').value) ? modal.querySelector('#modalPhoneticsVoiceSelect').value : null,
+                        etymology: {
+                            roots: tempEtymologyRoots.filter(r => r.wordId || (r.customRoot && r.customRoot.trim() !== '')),
+                            notes: modal.querySelector('#modalEtymologyNotes').value.trim()
+                        },
+                        // Persist the base era selected by the user. Use null if no selection exists.
+                        baseEraId: (modal.querySelector('#modalBaseEra') && modal.querySelector('#modalBaseEra').value) ? modal.querySelector('#modalBaseEra').value : null,
+                        evolutionTimeline: (existingWord && existingWord.evolutionTimeline) ? existingWord.evolutionTimeline : [],
+                        dialectalForms: (existingWord && existingWord.dialectalForms) ? existingWord.dialectalForms : [],
+                        ...(isLogographic ? { logographImage: logographImage || '' } : {})
+                    };
 
                 if (!updatedWord.word || !updatedWord.meaning || !updatedWord.partOfSpeech) {
                     alert('กรุณากรอกข้อมูล: คำศัพท์ (รูปฐานเสียง), ความหมาย, และชนิดของคำ'); return;
@@ -5810,9 +5841,16 @@ window.openEvolutionModalForWord = (wordId) => {
                 let initialPhonetic = existingEvo?.phoneticForm || '';
                 let initialOrthographic = existingEvo?.orthographicForm || '';
 
-                if (eraIndex === 0 && !existingEvo) { 
-                    initialPhonetic = word.word; 
-                    initialOrthographic = transliterateWordToSymbols(initialPhonetic); 
+                // Determine the base form for this era.  The initial form should be set on the base era defined per word.
+                if (!existingEvo) {
+                    if (word.baseEraId && era.id === word.baseEraId) {
+                        initialPhonetic = word.word;
+                        initialOrthographic = transliterateWordToSymbols(initialPhonetic);
+                    } else if ((!word.baseEraId || word.baseEraId === '') && eraIndex === 0) {
+                        // Fallback to the first era when no base era is defined
+                        initialPhonetic = word.word;
+                        initialOrthographic = transliterateWordToSymbols(initialPhonetic);
+                    }
                 }
 
                 content += `
@@ -5891,6 +5929,77 @@ window.openEvolutionModalForWord = (wordId) => {
                 currentEraEntryDivModal.querySelector('.evo-phonetic').value = newPhoneticForm;
                 currentEraEntryDivModal.querySelector('.evo-orthographic').value = transliterateWordToSymbols(newPhoneticForm); 
             }
+        };
+
+        // Display a read-only evolution overview for a specific word.  This shows the evolution as a
+        // horizontal flow (tree-like) and a table listing the forms across eras.  Invoked from the
+        // dictionary word detail popup when the user clicks the "วิวัฒนาการศัพท์" button.  It uses
+        // the genericModal to present the information.
+        window.showEvolutionDetailPopup = (wordId) => {
+            const word = currentLanguage.lexicon.find(w => w.id === wordId);
+            if (!word || !word.evolutionTimeline || word.evolutionTimeline.length === 0) {
+                alert('ไม่พบข้อมูลวิวัฒนาการสำหรับคำนี้');
+                return;
+            }
+            // Sort eras by order for consistent display
+            const sortedEras = [...currentLanguage.eras].sort((a,b) => (a.order || 0) - (b.order || 0));
+            genericModalTitle.textContent = `วิวัฒนาการของคำ: ${transliterateWordToSymbols(word.word)} [${word.word}]`;
+            let content = '<div class="space-y-6">';
+            // Flow / tree diagram section
+            content += '<div><h4 class="text-lg font-semibold text-purple-700 mb-2">แผนภูมิสายวิวัฒนาการ</h4><div class="word-evolution-flow-container flex flex-wrap items-center">';
+            let first = true;
+            sortedEras.forEach((era) => {
+                const evoEntry = word.evolutionTimeline.find(e => e.eraId === era.id);
+                if (evoEntry && (evoEntry.phoneticForm || evoEntry.orthographicForm)) {
+                    if (!first) {
+                        content += '<span class="evolution-arrow">&rarr;</span>';
+                    }
+                    first = false;
+                    const ph = evoEntry.phoneticForm || '';
+                    let ortho = '';
+                    if (evoEntry.orthographicForm && evoEntry.orthographicForm.trim() !== '') {
+                        ortho = evoEntry.orthographicForm;
+                    } else {
+                        // Fallback to transliteration of the phonetic form
+                        ortho = transliterateWordToSymbols(ph);
+                    }
+                    content += `<div class="evolution-era-node"><strong>${era.name}</strong><span class="ortho">${ortho}</span><span class="phonetic">/${ph}/</span></div>`;
+                }
+            });
+            if (first) {
+                content += '<p class="text-sm text-gray-500">ไม่มีข้อมูลวิวัฒนาการให้แสดง</p>';
+            }
+            content += '</div></div>';
+            // Table section
+            content += '<div><h4 class="text-lg font-semibold text-purple-700 mb-2">ตารางวิวัฒนาการ</h4>';
+            content += '<table class="min-w-full divide-y divide-purple-200 bg-white rounded shadow">';
+            content += '<thead><tr class="bg-purple-100">';
+            content += '<th class="px-4 py-2 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">ยุค</th>';
+            content += '<th class="px-4 py-2 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">รูปเสียง</th>';
+            content += '<th class="px-4 py-2 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">รูปเขียน</th>';
+            content += '<th class="px-4 py-2 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">หมายเหตุ</th>';
+            content += '</tr></thead><tbody>';
+            sortedEras.forEach((era) => {
+                const evoEntry = word.evolutionTimeline.find(e => e.eraId === era.id);
+                if (evoEntry && (evoEntry.phoneticForm || evoEntry.orthographicForm || evoEntry.notes)) {
+                    const ph = evoEntry.phoneticForm || '';
+                    let ortho = '';
+                    if (evoEntry.orthographicForm && evoEntry.orthographicForm.trim() !== '') {
+                        ortho = evoEntry.orthographicForm;
+                    } else {
+                        ortho = transliterateWordToSymbols(ph);
+                    }
+                    const notes = evoEntry.notes || '';
+                    content += `<tr><td class="px-4 py-2 text-sm text-gray-700">${era.name}</td><td class="px-4 py-2 text-sm font-mono">${ph}</td><td class="px-4 py-2 text-sm font-mono">${ortho}</td><td class="px-4 py-2 text-sm text-gray-600">${notes}</td></tr>`;
+                }
+            });
+            content += '</tbody></table></div>';
+            content += '</div>';
+            genericModalContent.innerHTML = content;
+            genericModalFooter.innerHTML = `<button class="btn-secondary" onclick="closeGenericModal.click()">ปิด</button>`;
+            // Hide the word detail modal and show the generic modal
+            wordDetailModal.classList.add('hidden');
+            genericModal.classList.remove('hidden');
         };
 
         function applyDialectSoundChanges(text, rules) { 
