@@ -8247,7 +8247,89 @@ window.openEvolutionModalForWord = (wordId) => {
     // Default voice to be used when no explicit selection is provided. We choose the French voice "Léa".
     const DEFAULT_VOICE_ID = 'Lea';
 
-    let pollyVoices = [];
+    
+
+    // === Voice persistence helpers (per language & per word) ===
+    function __languageName() {
+        try {
+            return (typeof currentLanguage !== 'undefined' && currentLanguage && currentLanguage.name) ? currentLanguage.name : 'global';
+        } catch (e) { return 'global'; }
+    }
+    function __preferredVoiceKey() {
+        return `preferredVoiceId_${__languageName()}`;
+    }
+    function savePreferredVoice(id) {
+        try { localStorage.setItem(__preferredVoiceKey(), id); } catch(e){}
+    }
+    function getPreferredVoice() {
+        try {
+            return localStorage.getItem(__preferredVoiceKey()) || localStorage.getItem('preferredVoiceId_global') || null;
+        } catch(e){ return null; }
+    }
+    // ---- Per-word helpers ----
+    function __textOf(el) { return (el && (el.textContent||'').trim()) || ''; }
+    function __first(container, sel) { try { return container ? container.querySelector(sel) : null; } catch(e){ return null; } }
+    function __deriveWordKey(container) {
+        if (!container) return null;
+        const ds = container.dataset || {};
+        const fields = ['wordId','entryId','lexemeId','lemma','orthography','grapheme','key','id'];
+        for (const k of fields) { if (ds[k] && String(ds[k]).trim()) return String(ds[k]).trim(); }
+        const picks = ['[data-orthography]','[data-lemma]','[data-word]','[data-grapheme]','.orthography','.lemma','.word','td[data-col=\"orthography\"]','td[data-col=\"lemma\"]'];
+        for (const s of picks) {
+            const el = __first(container, s);
+            const t = __textOf(el);
+            if (t) return t;
+        }
+        const tr = container.closest ? container.closest('tr') : null;
+        if (tr) {
+            const cells = Array.from(tr.querySelectorAll('td,th')).map(__textOf).filter(Boolean);
+            if (cells.length) return cells.join(' | ').slice(0,256);
+        }
+        const t = __textOf(container).slice(0,256);
+        return t || null;
+    }
+    function __wordKeyFromContainer(container) {
+        return __deriveWordKey(container);
+    }
+    function __wordStorageKey(wordKey) {
+        const lang = __languageName();
+        try { return 'voiceForWord_' + encodeURIComponent(lang) + '_' + encodeURIComponent(wordKey); }
+        catch(e){ return 'voiceForWord_' + lang + '_' + wordKey; }
+    }
+    function saveVoiceForWord(wordKey, voiceId) {
+        if (!wordKey || !voiceId) return;
+        try { localStorage.setItem(__wordStorageKey(wordKey), voiceId); } catch (e) {}
+    }
+    function getVoiceForWord(wordKey) {
+        if (!wordKey) return null;
+        try { return localStorage.getItem(__wordStorageKey(wordKey)); } catch (e) { return null; }
+    }
+    function applyPerWordVoice(sel) {
+        try {
+            if (!sel || !sel.options || sel.options.length === 0) return;
+            const container = sel.closest('[data-phonetic], tr, .dictionary-row, .entry-row') || sel.closest('tr') || sel.parentElement;
+            const wordKey = __wordKeyFromContainer(container);
+            const perWord = wordKey ? getVoiceForWord(wordKey) : null;
+            if (perWord && Array.from(sel.options).some(o => o.value === perWord)) {
+                sel.value = perWord;
+                if (container) container.setAttribute('data-voiceid', perWord);
+                return true;
+            }
+        } catch (e) {}
+        return false;
+    }
+    function __ensureStableWordKeyForSelect(sel) {
+        try {
+            const container = sel.closest('[data-phonetic], tr, .dictionary-row, .entry-row') || sel.closest('tr') || sel.parentElement;
+            if (!container) return;
+            const current = (container.dataset && (container.dataset.wordId || container.dataset.entryId || container.dataset.lexemeId || container.dataset.key));
+            if (current && String(current).trim()) return;
+            const derived = __deriveWordKey(container);
+            if (derived) { container.dataset.key = derived; }
+        } catch(e){}
+    }
+
+let pollyVoices = [];
 
     function loadPollyVoices() {
         polly.describeVoices({ Engine: 'standard' }, function(err, data) {
@@ -8280,19 +8362,34 @@ window.openEvolutionModalForWord = (wordId) => {
                 option.textContent = text;
                 sel.appendChild(option);
             });
-            // Determine which voice to select: explicit data-selected-voice attribute takes highest precedence,
-            // then previously selected value (if still present), otherwise fall back to default voice.
-            let targetVoice = null;
-            if (selectedAttr && Array.from(sel.options).some(opt => opt.value === selectedAttr)) {
-                targetVoice = selectedAttr;
-            } else if (previous && Array.from(sel.options).some(opt => opt.value === previous)) {
-                targetVoice = previous;
-            }
-            if (!targetVoice) {
-                const preferred = pollyVoices.find(v => v.Id === DEFAULT_VOICE_ID);
-                targetVoice = preferred ? preferred.Id : (pollyVoices.length > 0 ? pollyVoices[0].Id : '');
-            }
-            sel.value = targetVoice;
+            
+                        // Determine which voice to select with precedence:
+                        // 1) per-word saved voice (localStorage),
+                        // 2) user's saved preferred voice for this language,
+                        // 3) explicit data-selected-voice on the element,
+                        // 4) previously selected value (if still available),
+                        // 5) DEFAULT_VOICE_ID, or the first available Polly voice.
+                        let targetVoice = null;
+                        const container = sel.closest('[data-phonetic], tr, .dictionary-row, .entry-row') || sel.closest('tr') || sel.parentElement;
+                        const wordKey = (typeof __wordKeyFromContainer === 'function') ? __wordKeyFromContainer(container) : null;
+                        const perWordSaved = wordKey && (typeof getVoiceForWord === 'function') ? getVoiceForWord(wordKey) : null;
+                        const savedPreferred = (typeof getPreferredVoice === 'function') ? getPreferredVoice() : null;
+                        const has = (val) => val && Array.from(sel.options).some(opt => opt.value === val);
+                        if (perWordSaved && has(perWordSaved)) {
+                            targetVoice = perWordSaved;
+                        } else if (savedPreferred && has(savedPreferred)) {
+                            targetVoice = savedPreferred;
+                        } else if (selectedAttr && has(selectedAttr)) {
+                            targetVoice = selectedAttr;
+                        } else if (previous && has(previous)) {
+                            targetVoice = previous;
+                        } else {
+                            const preferred = pollyVoices.find(v => v.Id === DEFAULT_VOICE_ID);
+                            targetVoice = preferred ? preferred.Id : (pollyVoices.length > 0 ? pollyVoices[0].Id : '');
+                        }
+                        sel.value = targetVoice;
+                        if (container) container.setAttribute('data-voiceid', sel.value);
+                
         });
     }
 
@@ -8399,7 +8496,45 @@ window.openEvolutionModalForWord = (wordId) => {
         }
     });
 
-    document.addEventListener('DOMContentLoaded', function() {
+    
+
+    // === Per-word voice persistence: change handler + initial apply + observer ===
+    document.addEventListener('change', function(e){
+        const sel = e.target;
+        if (sel && sel.matches('select.voice-select')) {
+            const container = sel.closest('[data-phonetic], tr, .dictionary-row, .entry-row') || sel.closest('tr') || sel.parentElement;
+            const wordKey = (typeof __wordKeyFromContainer === 'function') ? __wordKeyFromContainer(container) : null;
+            if (wordKey && sel.value) {
+                try { saveVoiceForWord(wordKey, sel.value); } catch (err) {}
+            }
+            if (container) container.setAttribute('data-voiceid', sel.value);
+            if (container) {
+                container.querySelectorAll && container.querySelectorAll('select.voice-select').forEach(s => {
+                    if (s !== sel && Array.from(s.options).some(o => o.value === sel.value)) s.value = sel.value;
+                });
+            }
+        }
+    });
+    window.addEventListener('DOMContentLoaded', ()=>{
+        try { document.querySelectorAll('select.voice-select').forEach(s => { __ensureStableWordKeyForSelect(s); applyPerWordVoice(s); }); } catch(e){}
+        try {
+            const __voicePerWordObserver = new MutationObserver((mutations)=>{
+                mutations.forEach(m => {
+                    m.addedNodes && m.addedNodes.forEach(node => {
+                        if (node.querySelectorAll) {
+                            node.querySelectorAll('select.voice-select').forEach(s => { __ensureStableWordKeyForSelect(s); applyPerWordVoice(s); });
+                        }
+                        if (node.matches && node.matches('select.voice-select')) {
+                            __ensureStableWordKeyForSelect(node); applyPerWordVoice(node);
+                        }
+                    });
+                });
+            });
+            __voicePerWordObserver.observe(document.body, {childList:true, subtree:true});
+        } catch(e){}
+    });
+
+document.addEventListener('DOMContentLoaded', function() {
         // Load voices after credentials
         AWS.config.credentials.get(function(err) {
             if (err) {
@@ -8410,5 +8545,50 @@ window.openEvolutionModalForWord = (wordId) => {
         });
     });
     </script>
+<script>
+
+    // === Per-word voice booster: handle late-added <option> and user interactions ===
+    (function(){
+        function maybeApply(e) {
+            const sel = e.target && e.target.matches && e.target.matches('select.voice-select') ? e.target : null;
+            if (!sel) return;
+            try { if (typeof applyPerWordVoice === 'function') applyPerWordVoice(sel); } catch (err) {}
+        }
+        ['focusin','mousedown','mouseover','touchstart','click'].forEach(ev => {
+            document.addEventListener(ev, maybeApply, true);
+        });
+        const obs = new MutationObserver((mutations)=>{
+            mutations.forEach(m => {
+                if (m.addedNodes && m.addedNodes.length) {
+                    m.addedNodes.forEach(node => {
+                        if (!node) return;
+                        try {
+                            if (node.matches && node.matches('select.voice-select')) {
+                                if (typeof applyPerWordVoice === 'function') applyPerWordVoice(node);
+                            } else if (node.querySelectorAll) {
+                                node.querySelectorAll('select.voice-select').forEach(s => {
+                                    if (typeof applyPerWordVoice === 'function') applyPerWordVoice(s);
+                                });
+                            }
+                            if (node.nodeName === 'OPTION') {
+                                const parent = node.parentElement;
+                                if (parent && parent.matches && parent.matches('select.voice-select')) {
+                                    if (typeof applyPerWordVoice === 'function') applyPerWordVoice(parent);
+                                }
+                            }
+                        } catch (e) {}
+                    });
+                }
+            });
+        });
+        try { obs.observe(document.body, {childList:true, subtree:true}); } catch(e){}
+        window.debugVoicePersist = {
+            reapplyAll(){
+                try { document.querySelectorAll('select.voice-select').forEach(s => applyPerWordVoice && applyPerWordVoice(s)); } catch(e){}
+            }
+        };
+    })();
+
+</script>
 </body>
 </html>
