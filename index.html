@@ -2314,11 +2314,12 @@ deleteLangButton.addEventListener('click', () => {
             // Otherwise, transliterate the base phonemic form strictly
             const basePhonemicForm = typeof wordEntry.word === 'string' ? wordEntry.word : '';
             // Always use deterministic mapping for display in dictionary/other systems
-            // If writing system is custom, return HTML with custom symbol images/text
+            // If writing system is custom, return HTML with custom symbol images/text and always pick the first grapheme
             if (currentLanguage.orthography && currentLanguage.orthography.writingSystem === 'custom' && Array.isArray(currentLanguage.orthography.customSymbols) && currentLanguage.orthography.customSymbols.length > 0) {
                 return transliterateWordToSymbols(basePhonemicForm, forDisplay, true, true);
             }
-            return transliterateWordToSymbols(basePhonemicForm, forDisplay, true);
+            // For Latin and other writing systems, allow the caller to choose whether to use the first grapheme (deterministic) or pick randomly
+            return transliterateWordToSymbols(basePhonemicForm, forDisplay, useFirstGraphemeForAutoInflection);
         }
 
 
@@ -2508,67 +2509,76 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
                     return transliterated + toneMarker;
                 }
             } else if (writingSystem === 'latin' && graphemeMappings && graphemeMappings.length > 0) {
-                // Strict mapping: initial = initialGraphemes, vowel = vowelGraphemes, final = finalGraphemes
+                /*
+                 * When using the Latin writing system, try to apply user-defined grapheme mappings
+                 * wherever possible.  The original implementation only allowed mappings at initial
+                 * and final positions for consonants, or vowel-specific mappings.  However, users
+                 * often expect the "vowel/general" field to act as a fallback for any position.  In
+                 * addition, if an initial or final mapping is unavailable, the code should fall back
+                 * to another available mapping (initial, final or general) instead of skipping the
+                 * phoneme.  This logic ensures that adding a grapheme mapping always affects word
+                 * generation, no matter the segment’s position.
+                 */
                 const sortedMappings = [...graphemeMappings].sort((a, b) => b.sound.length - a.sound.length);
-                let currentOriginalPos = 0; // Track position in the original baseWord for context (initial/final).
-
+                let currentOriginalPos = 0;
                 while (remainingWord.length > 0) {
-                    let foundMatch = false;
+                    let foundMapping = false;
                     for (const gm of sortedMappings) {
-                        if (remainingWord.startsWith(gm.sound)) {
-                            let potentialGraphemes = [];
-                            const isInitialSoundSegment = currentOriginalPos === 0;
-                            const isFinalSoundSegment = (currentOriginalPos + gm.sound.length === baseWord.length);
-                            const isConsonantSound = (currentLanguage.phonology.consonants || []).includes(gm.sound);
-                            const isVowelSound = (currentLanguage.phonology.vowels || []).includes(gm.sound);
-
-                            // Strict: Only use initialGraphemes for initial, finalGraphemes for final, vowelGraphemes for vowels
-                            if (isConsonantSound) {
-                                if (isInitialSoundSegment && gm.initialGraphemes && gm.initialGraphemes.length > 0) {
-                                    potentialGraphemes = gm.initialGraphemes;
-                                } else if (isFinalSoundSegment && gm.finalGraphemes && gm.finalGraphemes.length > 0) {
-                                    potentialGraphemes = gm.finalGraphemes;
-                                } else {
-                                    // No fallback: do not use other types
-                                    potentialGraphemes = [];
-                                }
-                            } else if (isVowelSound) {
-                                if (gm.vowelGraphemes && gm.vowelGraphemes.length > 0) {
-                                    potentialGraphemes = gm.vowelGraphemes;
-                                } else {
-                                    potentialGraphemes = [];
-                                }
+                        if (!remainingWord.startsWith(gm.sound)) continue;
+                        const isInitial = currentOriginalPos === 0;
+                        const isFinal = (currentOriginalPos + gm.sound.length === baseWord.length);
+                        const isConsonant = (currentLanguage.phonology.consonants || []).includes(gm.sound);
+                        const isVowel    = (currentLanguage.phonology.vowels || []).includes(gm.sound);
+                        let potential = [];
+                        if (isConsonant) {
+                            // Prefer initial mapping at the start, final at the end, then general
+                            if (isInitial && Array.isArray(gm.initialGraphemes) && gm.initialGraphemes.length > 0) {
+                                potential = gm.initialGraphemes;
+                            } else if (isFinal && Array.isArray(gm.finalGraphemes) && gm.finalGraphemes.length > 0) {
+                                potential = gm.finalGraphemes;
+                            } else if (Array.isArray(gm.vowelGraphemes) && gm.vowelGraphemes.length > 0) {
+                                // Use general/vowel graphemes as fallback for internal consonants
+                                potential = gm.vowelGraphemes;
                             }
-
-                            let chosenGrapheme = null;
-                            if (potentialGraphemes.length > 0) {
-                                if (useFirstGraphemeOnly) {
-                                    chosenGrapheme = potentialGraphemes[0];
-                                } else {
-                                    chosenGrapheme = potentialGraphemes[Math.floor(Math.random() * potentialGraphemes.length)];
-                                }
+                            // If still empty, fall back to whichever list has values
+                            if (potential.length === 0) {
+                                if (Array.isArray(gm.initialGraphemes) && gm.initialGraphemes.length > 0) potential = gm.initialGraphemes;
+                                else if (Array.isArray(gm.finalGraphemes) && gm.finalGraphemes.length > 0) potential = gm.finalGraphemes;
                             }
-
-                            if (chosenGrapheme) {
-                                transliterated += chosenGrapheme;
-                                remainingWord = remainingWord.substring(gm.sound.length);
-                                currentOriginalPos += gm.sound.length;
-                                foundMatch = true;
-                                break;
+                        } else if (isVowel) {
+                            // For vowels, try vowel/general first
+                            if (Array.isArray(gm.vowelGraphemes) && gm.vowelGraphemes.length > 0) {
+                                potential = gm.vowelGraphemes;
+                            }
+                            // Fallback to initial or final if general is unavailable
+                            if (potential.length === 0) {
+                                if (Array.isArray(gm.initialGraphemes) && gm.initialGraphemes.length > 0) potential = gm.initialGraphemes;
+                                else if (Array.isArray(gm.finalGraphemes) && gm.finalGraphemes.length > 0) potential = gm.finalGraphemes;
                             }
                         }
+                        if (potential.length > 0) {
+                            const chosen = useFirstGraphemeOnly ? potential[0] : potential[Math.floor(Math.random() * potential.length)];
+                            transliterated += chosen;
+                            remainingWord = remainingWord.substring(gm.sound.length);
+                            currentOriginalPos += gm.sound.length;
+                            foundMapping = true;
+                            break;
+                        }
                     }
-                    if (!foundMatch) {
+                    if (!foundMapping) {
+                        // No mapping found for this segment; preserve the raw phoneme character
                         transliterated += remainingWord[0];
                         remainingWord = remainingWord.substring(1);
                         currentOriginalPos += 1;
                     }
                 }
-            } else { 
+            } else {
+                // If not using custom symbols or latin mappings, return the base word unchanged.
                 transliterated = baseWord;
             }
 
-            return transliterated + toneMarker; // toneMarker will be empty if diacritics are enabled
+            // Append tone marker (if present and diacritics are not used)
+            return transliterated + toneMarker;
         }
 
 
