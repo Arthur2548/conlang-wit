@@ -2597,7 +2597,7 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
                     }
                     result.push(newSyll);
                 }
-                transliterated = result.join('.');
+                transliterated = result.join('');
                 return transliterated;
             }
 
@@ -2606,6 +2606,11 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
                 const sortedSymbols = [...customSymbols].sort((a, b) => b.sound.length - a.sound.length); // Longest sound first for matching.
                 let html = '';
                 while (remainingWord.length > 0) {
+                    // Skip syllable delimiters ('.') or whitespace without adding to output
+                    if (remainingWord.startsWith('.') || remainingWord.startsWith(' ')) {
+                        remainingWord = remainingWord.substring(1);
+                        continue;
+                    }
                     let foundMatch = false;
                     for (const sym of sortedSymbols) {
                         if (remainingWord.startsWith(sym.sound)) {
@@ -2655,26 +2660,38 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
             } else if (writingSystem === 'latin' && graphemeMappings && graphemeMappings.length > 0) {
                 // Strict mapping: initial = initialGraphemes, vowel = vowelGraphemes, final = finalGraphemes
                 const sortedMappings = [...graphemeMappings].sort((a, b) => b.sound.length - a.sound.length);
-                let currentOriginalPos = 0; // Track position in the original baseWord for context (initial/final).
+                let globalPos = 0; // Track position in the original baseWord including syllable delimiters
+                let syllableStart = 0; // Track start index of the current syllable in baseWord
 
                 while (remainingWord.length > 0) {
+                    // Skip syllable delimiters ('.') or whitespace and reset syllable position
+                    if (remainingWord.startsWith('.') || remainingWord.startsWith(' ')) {
+                        remainingWord = remainingWord.substring(1);
+                        globalPos++;
+                        syllableStart = globalPos;
+                        continue;
+                    }
                     let foundMatch = false;
                     for (const gm of sortedMappings) {
                         if (remainingWord.startsWith(gm.sound)) {
                             let potentialGraphemes = [];
-                            const isInitialSoundSegment = currentOriginalPos === 0;
-                            const isFinalSoundSegment = (currentOriginalPos + gm.sound.length === baseWord.length);
+                            // Determine if this segment is consonant or vowel
                             const isConsonantSound = (currentLanguage.phonology.consonants || []).includes(gm.sound);
                             const isVowelSound = (currentLanguage.phonology.vowels || []).includes(gm.sound);
-
-                            // Strict: Only use initialGraphemes for initial, finalGraphemes for final, vowelGraphemes for vowels
+                            // Determine end of current syllable (position of next delimiter or end of baseWord)
+                            let nextDelimIndex = baseWord.indexOf('.', globalPos);
+                            if (nextDelimIndex === -1) nextDelimIndex = baseWord.length;
+                            const syllableEndPos = nextDelimIndex;
+                            const isInitialSoundSegment = (globalPos === syllableStart);
+                            const isFinalSoundSegment = (globalPos + gm.sound.length === syllableEndPos);
+                            // Strict mapping logic
                             if (isConsonantSound) {
                                 if (isInitialSoundSegment && gm.initialGraphemes && gm.initialGraphemes.length > 0) {
                                     potentialGraphemes = gm.initialGraphemes;
                                 } else if (isFinalSoundSegment && gm.finalGraphemes && gm.finalGraphemes.length > 0) {
                                     potentialGraphemes = gm.finalGraphemes;
                                 } else {
-                                    // Interior consonant: prefer initial grapheme, then final, finally leave empty.
+                                    // Interior consonant: prefer initial, then final
                                     if (gm.initialGraphemes && gm.initialGraphemes.length > 0) {
                                         potentialGraphemes = gm.initialGraphemes;
                                     } else if (gm.finalGraphemes && gm.finalGraphemes.length > 0) {
@@ -2690,7 +2707,6 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
                                     potentialGraphemes = [];
                                 }
                             }
-
                             let chosenGrapheme = null;
                             if (potentialGraphemes.length > 0) {
                                 if (useFirstGraphemeOnly) {
@@ -2699,20 +2715,24 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
                                     chosenGrapheme = potentialGraphemes[Math.floor(Math.random() * potentialGraphemes.length)];
                                 }
                             }
-
                             if (chosenGrapheme) {
                                 transliterated += chosenGrapheme;
+                                // Advance positions by the length of the sound
+                                globalPos += gm.sound.length;
                                 remainingWord = remainingWord.substring(gm.sound.length);
-                                currentOriginalPos += gm.sound.length;
                                 foundMatch = true;
+                                break;
+                            } else {
+                                // No available grapheme: break to avoid infinite loop
                                 break;
                             }
                         }
                     }
                     if (!foundMatch) {
+                        // Append the current character as is and advance positions
                         transliterated += remainingWord[0];
                         remainingWord = remainingWord.substring(1);
-                        currentOriginalPos += 1;
+                        globalPos += 1;
                     }
                 }
             } else { 
@@ -2781,6 +2801,11 @@ function convertOrthographyToPhoneme(orthographyStr) {
 
                 for (let j = 0; j < numSyllToGenerate; j++) {
                     const syllableParts = generateSyllable(); 
+                    // Insert a dot delimiter between syllables to mark syllable boundaries for transliteration.
+                    if (j > 0) {
+                        rawWordFormBeforeActiveChanges += '.';
+                        finalPhoneticWord += '.';
+                    }
                     rawWordFormBeforeActiveChanges += syllableParts.base; 
                     finalPhoneticWord += syllableParts.phonetic; 
                 }
@@ -2838,7 +2863,9 @@ function convertOrthographyToPhoneme(orthographyStr) {
 
                 const wordDisplaySpan = document.createElement('span');
                 wordDisplaySpan.className = 'font-semibold mr-2 flex items-center';
-                wordDisplaySpan.innerHTML = `${orthographyHtml} <span class="text-sm text-gray-500 font-normal font-mono ml-2">(${finalPhoneticWord})</span> <span class="text-xs text-blue-400 font-normal font-mono ml-2">[ฐานดิบ: ${rawWordFormBeforeActiveChanges}]</span>`;
+                // Remove syllable delimiters from the phonetic string when displaying to the user
+                const finalPhoneticWordDisplay = finalPhoneticWord.replace(/\./g, '');
+                wordDisplaySpan.innerHTML = `${orthographyHtml} <span class="text-sm text-gray-500 font-normal font-mono ml-2">(${finalPhoneticWordDisplay})</span> <span class="text-xs text-blue-400 font-normal font-mono ml-2">[ฐานดิบ: ${rawWordFormBeforeActiveChanges}]</span>`;
                 if (randomMeaning) {
                      wordDisplaySpan.innerHTML += ` <span class="text-xs text-blue-500 ml-2">หมายถึง: ${randomMeaning}</span>`;
                 }
