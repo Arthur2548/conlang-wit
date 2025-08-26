@@ -399,6 +399,22 @@
         // languages the code will still respect the IDs stored on each sentence object.
         let nextSentenceId = 1;
 
+        // -----------------------------------------------------------------------------
+        // Configuration for dictionary pagination and global state
+        // Number of items to display per page in the dictionary. The user requested
+        // 30 items per page with page navigation controls.
+        const DICTIONARY_ITEMS_PER_PAGE = 30;
+        // Allow user to select number of dictionary entries per page dynamically.
+        // Initialize with the default constant; can be updated by a dropdown in the dictionary UI.
+        let dictionaryItemsPerPage = DICTIONARY_ITEMS_PER_PAGE;
+        // Holds a pending custom orthography string when adding a word from orthography → phoneme conversion.
+        // This value is consumed by showWordModal to prefill the custom orthography field.
+        let pendingCustomOrthography = null;
+        // These variables hold the current page and data subset being displayed in the
+        // dictionary. They are updated by renderDictionaryUI and helper functions.
+        let dictionaryCurrentPage = 1;
+        let dictionaryCurrentData = [];
+
 
         let activeTab = 'phonology';
 
@@ -994,6 +1010,7 @@ deleteLangButton.addEventListener('click', () => {
         function loadData() {
             // Simulate progress for localStorage loading (since it's fast, this is for UX only)
             setLoadingPercent(10);
+            // Shorten artificial loading delay to speed up load time
             setTimeout(() => {
                 const savedAllLangs = localStorage.getItem('allLanguagesData');
                 setLoadingPercent(30);
@@ -1014,6 +1031,7 @@ deleteLangButton.addEventListener('click', () => {
                         globalInterLangRules = [];
                     }
                     setLoadingPercent(80);
+                    // Further shorten intermediate loading delays
                     setTimeout(() => {
                         const savedLangData = localStorage.getItem('currentLanguageData');
                         let langToLoad = null;
@@ -1045,14 +1063,15 @@ deleteLangButton.addEventListener('click', () => {
                         nextToneId = calculateNextId(currentLanguage.phonology.tones || [], 'tone_');
                         nextTonePhonotacticId = calculateNextId(currentLanguage.phonology.tonePhonotactics || [], 'tp_');
                         setLoadingPercent(100);
+                        // Finalize loading with a minimal delay before rendering the UI
                         setTimeout(() => {
                             console.log("Data loaded. Current Lang:", currentLanguage.name, "Next Word ID:", nextWordId, "Next RuleStep ID (after load):", nextRuleStepId);
                             renderLanguageSelector(); // Populate dropdown
                             hideLoadingOverlay();
-                        }, 200);
-                    }, 200);
-                }, 200);
-            }, 200);
+                        }, 50);
+                    }, 50);
+                }, 50);
+            }, 50);
         }
         
         function calculateNextId(itemsArray = [], prefix = '') {
@@ -1754,8 +1773,13 @@ deleteLangButton.addEventListener('click', () => {
                     <div class="flex-grow min-w-[100px]"><label class="text-xs">เสียง (Phoneme):</label><input type="text" id="graphemeMapSoundPhonology" placeholder="เช่น k, a" class="w-full p-1 border rounded text-sm" list="${phonemeDatalistId}"></div>
                     <div class="flex-grow"><label class="text-xs">รูปเขียนเมื่อเป็นพยัญชนะต้น (Initial Graphemes - คั่นด้วย ,):</label><input type="text" id="graphemeMapInitialPhonology" placeholder="เช่น k, c" class="w-full p-1 border rounded text-sm"></div>
                     <div class="flex-grow"><label class="text-xs">รูปเขียนเมื่อเป็นพยัญชนะท้าย (Final Graphemes - คั่นด้วย ,):</label><input type="text" id="graphemeMapFinalPhonology" placeholder="เช่น ck, k" class="w-full p-1 border rounded text-sm"></div>
-                     <div class="flex-grow"><label class="text-xs">รูปเขียนเมื่อเป็นสระ/ทั่วไป (Vowel/General Graphemes - คั่นด้วย ,):</label><input type="text" id="graphemeMapVowelPhonology" placeholder="เช่น a, ah" class="w-full p-1 border rounded text-sm"></div>
-                    <button id="addGraphemeMapButtonPhonology" class="btn-secondary px-2 py-1 rounded text-sm self-end">เพิ่ม/อัปเดตการจับคู่</button>
+                    <div class="flex-grow"><label class="text-xs">รูปเขียนเมื่อเป็นสระ/ทั่วไป (Vowel/General Graphemes - คั่นด้วย ,):</label><input type="text" id="graphemeMapVowelPhonology" placeholder="เช่น a, ah" class="w-full p-1 border rounded text-sm"></div>
+                    <!-- Checkbox to indicate this vowel cannot be followed by a coda consonant -->
+                    <div class="flex items-center ml-2 mt-2 sm:mt-0">
+                        <input type="checkbox" id="graphemeMapNoCodaPhonology" class="h-4 w-4 mr-1">
+                        <label for="graphemeMapNoCodaPhonology" class="text-xs">สระห้ามสะกด</label>
+                    </div>
+                    <button id="addGraphemeMapButtonPhonology" class="btn-secondary px-2 py-1 rounded text-sm self-end mt-2 sm:mt-0">เพิ่ม/อัปเดตการจับคู่</button>
                 </div>`;
             phonologyContainer.appendChild(graphemeMappingSection);
             renderGraphemeMappingsList();
@@ -2056,9 +2080,12 @@ deleteLangButton.addEventListener('click', () => {
                      content += `<span class="text-xs text-gray-400 ml-2">(ไม่มีรูปเขียนที่กำหนด)</span>`;
                 }
                 
-                const deleteButton = `<button class="text-red-500 hover:text-red-700 text-xs ml-auto" onclick="removeGraphemeMappingPhonology(${index})">&times; ลบ</button>`;
-                
-                div.innerHTML = `<div class="flex justify-between items-start">${content} ${deleteButton}</div>`;
+                // Create edit and delete buttons and show no-coda indicator
+                // Use a modal-based editor for grapheme mappings. The "✏️ แก้ไข" button will open a modal with a form pre-filled with the current mapping.
+                const editButton = `<button class="text-blue-500 hover:text-blue-700 text-xs mr-2" onclick="showEditGraphemeMappingModal(${index})">✏️ แก้ไข</button>`;
+                const deleteButton = `<button class="text-red-500 hover:text-red-700 text-xs" onclick="removeGraphemeMappingPhonology(${index})">&times; ลบ</button>`;
+                const noCodaLabel = gm.vowelNoCoda ? `<span class="text-xs text-red-500 ml-2">(ห้ามสะกด)</span>` : '';
+                div.innerHTML = `<div class="flex justify-between items-start"><div>${content}${noCodaLabel}</div><div class="flex-shrink-0 flex items-center">${editButton}${deleteButton}</div></div>`;
                 listContainer.appendChild(div);
             });
             if (!currentLanguage.phonology.graphemeMappings || currentLanguage.phonology.graphemeMappings.length === 0) {
@@ -2072,6 +2099,7 @@ deleteLangButton.addEventListener('click', () => {
             const initial = document.getElementById('graphemeMapInitialPhonology').value.split(',').map(s => s.trim()).filter(s => s);
             const final = document.getElementById('graphemeMapFinalPhonology').value.split(',').map(s => s.trim()).filter(s => s);
             const vowel = document.getElementById('graphemeMapVowelPhonology').value.split(',').map(s => s.trim()).filter(s => s);
+            const noCoda = document.getElementById('graphemeMapNoCodaPhonology') ? document.getElementById('graphemeMapNoCodaPhonology').checked : false;
 
             if (!sound) {
                 alert("กรุณาระบุเสียง (Phoneme)");
@@ -2084,9 +2112,9 @@ deleteLangButton.addEventListener('click', () => {
 
             const existingMappingIndex = currentLanguage.phonology.graphemeMappings.findIndex(gm => gm.sound === sound);
             if (existingMappingIndex > -1) {
-                currentLanguage.phonology.graphemeMappings[existingMappingIndex] = { sound, initialGraphemes: initial, finalGraphemes: final, vowelGraphemes: vowel };
+                currentLanguage.phonology.graphemeMappings[existingMappingIndex] = { sound, initialGraphemes: initial, finalGraphemes: final, vowelGraphemes: vowel, vowelNoCoda: noCoda };
             } else {
-                currentLanguage.phonology.graphemeMappings.push({ sound, initialGraphemes: initial, finalGraphemes: final, vowelGraphemes: vowel });
+                currentLanguage.phonology.graphemeMappings.push({ sound, initialGraphemes: initial, finalGraphemes: final, vowelGraphemes: vowel, vowelNoCoda: noCoda });
             }
             renderGraphemeMappingsList();
             saveData();
@@ -2094,6 +2122,7 @@ deleteLangButton.addEventListener('click', () => {
             document.getElementById('graphemeMapInitialPhonology').value = '';
             document.getElementById('graphemeMapFinalPhonology').value = '';
             document.getElementById('graphemeMapVowelPhonology').value = '';
+            if (document.getElementById('graphemeMapNoCodaPhonology')) document.getElementById('graphemeMapNoCodaPhonology').checked = false;
         }
 
         window.removeGraphemeMappingPhonology = (index) => {
@@ -2101,6 +2130,91 @@ deleteLangButton.addEventListener('click', () => {
             renderGraphemeMappingsList();
             saveData();
         }
+
+        // Pre-fill the grapheme mapping form for editing. This allows users to click "แก้ไข" and modify an existing mapping using the add/update form.
+        window.editGraphemeMappingPhonology = (index) => {
+            const gm = currentLanguage.phonology.graphemeMappings[index];
+            if (!gm) return;
+            const soundInput = document.getElementById('graphemeMapSoundPhonology');
+            const initialInput = document.getElementById('graphemeMapInitialPhonology');
+            const finalInput = document.getElementById('graphemeMapFinalPhonology');
+            const vowelInput = document.getElementById('graphemeMapVowelPhonology');
+            const noCodaCheckbox = document.getElementById('graphemeMapNoCodaPhonology');
+            if (soundInput) soundInput.value = gm.sound || '';
+            if (initialInput) initialInput.value = (gm.initialGraphemes || []).join(', ');
+            if (finalInput) finalInput.value = (gm.finalGraphemes || []).join(', ');
+            if (vowelInput) vowelInput.value = (gm.vowelGraphemes || []).join(', ');
+            if (noCodaCheckbox) noCodaCheckbox.checked = !!gm.vowelNoCoda;
+        };
+
+        // Display a modal to edit an existing grapheme mapping. This provides a better UX than scrolling to the form.
+        window.showEditGraphemeMappingModal = (index) => {
+            const gm = currentLanguage.phonology.graphemeMappings[index];
+            if (!gm) return;
+            // Build modal container
+            const overlay = document.createElement('div');
+            overlay.id = 'editGraphemeMappingModal';
+            overlay.className = 'fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50';
+            // Modal content HTML
+            overlay.innerHTML = `
+                <div class="bg-white p-4 rounded-lg shadow-lg w-96 max-w-full">
+                    <h3 class="text-lg font-semibold mb-3">แก้ไขการจับคู่เสียง</h3>
+                    <div class="space-y-2">
+                        <div>
+                            <label class="text-xs">เสียง (Phoneme):</label>
+                            <input type="text" id="editGraphemeSound" class="w-full p-1 border rounded text-sm" value="${gm.sound}">
+                        </div>
+                        <div>
+                            <label class="text-xs">รูปเขียนเมื่อเป็นพยัญชนะต้น (Initial Graphemes - คั่นด้วย ,):</label>
+                            <input type="text" id="editGraphemeInitial" class="w-full p-1 border rounded text-sm" value="${(gm.initialGraphemes || []).join(', ')}">
+                        </div>
+                        <div>
+                            <label class="text-xs">รูปเขียนเมื่อเป็นพยัญชนะท้าย (Final Graphemes - คั่นด้วย ,):</label>
+                            <input type="text" id="editGraphemeFinal" class="w-full p-1 border rounded text-sm" value="${(gm.finalGraphemes || []).join(', ')}">
+                        </div>
+                        <div>
+                            <label class="text-xs">รูปเขียนเมื่อเป็นสระ/ทั่วไป (Vowel/General Graphemes - คั่นด้วย ,):</label>
+                            <input type="text" id="editGraphemeVowel" class="w-full p-1 border rounded text-sm" value="${(gm.vowelGraphemes || []).join(', ')}">
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="editGraphemeNoCoda" class="h-4 w-4 mr-1"${gm.vowelNoCoda ? ' checked' : ''}>
+                            <label for="editGraphemeNoCoda" class="text-xs">สระห้ามสะกด</label>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex justify-end gap-2">
+                        <button id="cancelEditGrapheme" class="px-3 py-1 rounded bg-gray-300 hover:bg-gray-400 text-sm">ยกเลิก</button>
+                        <button id="saveEditGrapheme" class="px-3 py-1 rounded bg-purple-600 hover:bg-purple-700 text-white text-sm">บันทึก</button>
+                    </div>
+                </div>
+            `;
+            // Append overlay to body
+            document.body.appendChild(overlay);
+            // Cancel button removes modal
+            overlay.querySelector('#cancelEditGrapheme').onclick = () => {
+                overlay.remove();
+            };
+            // Save button updates the mapping and removes modal
+            overlay.querySelector('#saveEditGrapheme').onclick = () => {
+                const sound = overlay.querySelector('#editGraphemeSound').value.trim();
+                const initial = overlay.querySelector('#editGraphemeInitial').value.split(',').map(s => s.trim()).filter(s => s);
+                const final = overlay.querySelector('#editGraphemeFinal').value.split(',').map(s => s.trim()).filter(s => s);
+                const vowel = overlay.querySelector('#editGraphemeVowel').value.split(',').map(s => s.trim()).filter(s => s);
+                const noCoda = overlay.querySelector('#editGraphemeNoCoda').checked;
+                if (!sound) {
+                    alert('กรุณาระบุเสียง (Phoneme)');
+                    return;
+                }
+                if (initial.length === 0 && final.length === 0 && vowel.length === 0) {
+                    alert('กรุณาระบุอย่างน้อยหนึ่งรูปเขียน');
+                    return;
+                }
+                // Update mapping
+                currentLanguage.phonology.graphemeMappings[index] = { sound, initialGraphemes: initial, finalGraphemes: final, vowelGraphemes: vowel, vowelNoCoda: noCoda };
+                renderGraphemeMappingsList();
+                saveData();
+                overlay.remove();
+            };
+        };
 
         function renderActiveSoundChangesList() {
             const listContainer = document.getElementById('activeSoundChangesListPhonology');
@@ -2315,7 +2429,10 @@ deleteLangButton.addEventListener('click', () => {
                     <label class="block text-sm font-medium text-green-700">จำนวนคำที่ต้องการสร้าง:</label>
                     <input type="number" id="numWordsToGenerate" value="5" min="1" max="20" class="w-20 p-2 border border-green-300 rounded-md">
                 </div>
-                <button id="generateWordsButton" class="btn-primary bg-green-500 hover:bg-green-600 py-2 px-4 rounded-md">สร้างคำ 🎲</button>
+                <!-- Removed the orthography → phoneme conversion from the word generator.
+                     This feature now lives in the dictionary tab where users can convert
+                     orthographic forms to phonemic base forms and add them directly. -->
+                <button id="generateWordsButton" class="btn-primary bg-green-500 hover:bg-green-600 py-2 px-4 rounded-md mt-2">สร้างคำ 🎲</button>
                 <div id="generatedWordsArea" class="mt-4 p-3 bg-white rounded-md shadow">
                     <h4 class="font-semibold text-green-700">คำที่สร้างได้:</h4>
                     <ul id="generatedWordsList" class="list-disc list-inside text-sm"></ul>
@@ -2323,6 +2440,7 @@ deleteLangButton.addEventListener('click', () => {
             `;
             container.appendChild(section);
             document.getElementById('generateWordsButton').addEventListener('click', generateAndDisplayWords);
+            // The orthography → phoneme conversion controls have been moved to the dictionary UI.
         }
 
         // Function to get orthographic form, with an option to use the first grapheme for deterministic output
@@ -2602,7 +2720,46 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
             }
 
             return transliterated + toneMarker; // toneMarker will be empty if diacritics are enabled
+        } /* Close transliterateWordToSymbols */
+
+/* Convert an orthographic string into its corresponding base phonemic form.
+ * This uses a longest-match algorithm over all grapheme mappings defined in the current language.
+ * Defined at the global scope so it can be called from UI event handlers.
+ */
+function convertOrthographyToPhoneme(orthographyStr) {
+    if (!orthographyStr || typeof orthographyStr !== 'string') return '';
+    // Build a list of grapheme-to-sound mappings from initial, final and vowel graphemes
+    const mappings = [];
+    const gmList = (currentLanguage && currentLanguage.phonology && currentLanguage.phonology.graphemeMappings)
+        ? currentLanguage.phonology.graphemeMappings : [];
+    gmList.forEach(gm => {
+        (gm.initialGraphemes || []).forEach(g => { if (g) mappings.push({ g, sound: gm.sound }); });
+        (gm.finalGraphemes || []).forEach(g => { if (g) mappings.push({ g, sound: gm.sound }); });
+        (gm.vowelGraphemes || []).forEach(g => { if (g) mappings.push({ g, sound: gm.sound }); });
+    });
+    // Sort by grapheme length descending to ensure longest match first
+    mappings.sort((a, b) => b.g.length - a.g.length);
+    let result = '';
+    let i = 0;
+    const src = orthographyStr;
+    while (i < src.length) {
+        let matched = false;
+        for (const m of mappings) {
+            if (src.slice(i, i + m.g.length) === m.g) {
+                result += m.sound;
+                i += m.g.length;
+                matched = true;
+                break;
+            }
         }
+        if (!matched) {
+            // If no grapheme matches, append the character as-is and advance one character
+            result += src[i];
+            i++;
+        }
+    }
+    return result;
+}
 
 
         function generateAndDisplayWords() {
@@ -2716,6 +2873,10 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
                 let syllableBase = ""; 
                 let validSyllable = true;
                 let tempStructure = structureStr;
+                // Track the last vowel chosen for this syllable
+                let lastVowelUsed = null;
+                // Flag to indicate if the vowel forbids a coda consonant
+                let applyNoCodaDueToVowel = false;
                 
                 let onsetLength = 0;
                 const onsetMatch = tempStructure.match(/^(C+|C)/); 
@@ -2762,7 +2923,10 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
                         const vowelSegment = vowelMatch[0];
                         for (let k = 0; k < vowelSegment.length; k++) {
                             if (ph.vowels.length > 0) {
-                                syllableBase += ph.vowels[Math.floor(Math.random() * ph.vowels.length)];
+                                const chosenVowel = ph.vowels[Math.floor(Math.random() * ph.vowels.length)];
+                                syllableBase += chosenVowel;
+                                // update last vowel used
+                                lastVowelUsed = chosenVowel;
                             } else { validSyllable = false; break; }
                         }
                         if(validSyllable) tempStructure = tempStructure.substring(vowelSegment.length);
@@ -2771,7 +2935,17 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
                     }
                 }
 
-                if (validSyllable && tempStructure.length > 0) { 
+                // Determine if the chosen vowel forbids any coda (final consonant)
+                if (lastVowelUsed) {
+                    const gm = (currentLanguage && currentLanguage.phonology && currentLanguage.phonology.graphemeMappings)
+                        ? currentLanguage.phonology.graphemeMappings.find(m => m.sound === lastVowelUsed)
+                        : null;
+                    if (gm && gm.vowelNoCoda) {
+                        applyNoCodaDueToVowel = true;
+                    }
+                }
+
+                if (validSyllable && tempStructure.length > 0 && !applyNoCodaDueToVowel) { 
                     const codaStructure = tempStructure;
                     const availableFinals = ph.allowedFinalConsonants.filter(c => ph.consonants.includes(c));
                     const availableCodaClusters = ph.allowedCodaClusters.filter(cc => 
@@ -2812,7 +2986,7 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
                     validSyllable = false;
                 }
                 
-                if (!ph.allowNoCoda && !lastSegmentIsConsonant) { 
+                if (!ph.allowNoCoda && !lastSegmentIsConsonant && !applyNoCodaDueToVowel) { 
                      validSyllable = false;
                 }
 
@@ -4115,16 +4289,7 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
 
 
         function renderDictionaryUI(container) {
-            // --- ปุ่ม Export Excel ---
-            const exportRow = document.createElement('div');
-            exportRow.className = 'flex justify-end mb-4';
-            const exportBtn = document.createElement('button');
-            exportBtn.type = 'button';
-            exportBtn.className = 'px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 transition-colors flex items-center gap-2 shadow';
-            exportBtn.innerHTML = '<i class="fas fa-file-excel"></i> Export Excel (.xlsx)';
-            exportBtn.onclick = exportLexiconToExcel;
-            exportRow.appendChild(exportBtn);
-            container.appendChild(exportRow);
+            // --- Export buttons will be placed alongside JSON and CSV buttons inside the search control section. ---
 
             // ...existing code for rendering dictionary UI...
         // --- Export Lexicon to Excel (.xlsx) ---
@@ -4182,39 +4347,120 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
             const suggestionsId = `autocompleteSuggestionsContainer_${Date.now()}`;
 
             section.innerHTML = `
+                <!-- Search bar and clear button -->
                 <div class="flex flex-wrap gap-4 mb-4 items-center">
                     <div class="relative flex-grow min-w-[200px]">
                         <input type="text" id="${searchId}" placeholder="🔍 ค้นหาคำศัพท์ (อักขรวิธี, รูปฐาน, ความหมาย, คำไวพจน์)..." class="w-full p-2 border border-yellow-300 rounded-md">
                         <div id="${suggestionsId}" class="autocomplete-suggestions hidden bg-white border border-gray-300 rounded-md shadow-lg" style="width: calc(100% - 0px); top: 100%; left:0;"></div>
                     </div>
-                     <button id="clearSearchBtnDict" class="btn-secondary bg-gray-400 hover:bg-gray-500 px-3 py-2 rounded-md text-sm">ล้าง</button>
+                    <button id="clearSearchBtnDict" class="btn-secondary bg-gray-400 hover:bg-gray-500 px-3 py-2 rounded-md text-sm">ล้าง</button>
                 </div>
+                <!-- Export controls row -->
                 <div class="flex flex-wrap gap-2 mb-4 items-center">
                     <button id="exportJsonBtnDict" class="btn-secondary bg-amber-400 hover:bg-amber-500 px-3 py-1 rounded-md text-sm"><i class="fas fa-file-export mr-1"></i>Export JSON</button>
                     <button id="exportCsvBtnDict" class="btn-secondary bg-amber-400 hover:bg-amber-500 px-3 py-1 rounded-md text-sm"><i class="fas fa-file-csv mr-1"></i>Export CSV</button>
+                    <!-- Export Excel button placed next to the CSV export -->
+                    <button id="exportXlsxBtnDict" class="btn-secondary bg-green-500 hover:bg-green-600 px-3 py-1 rounded-md text-sm"><i class="fas fa-file-excel mr-1"></i>Export Excel (.xlsx)</button>
                     <button id="showAddWordModalBtnDict" class="btn-primary bg-yellow-500 hover:bg-yellow-600 py-2 px-4 rounded-md ml-auto"><i class="fas fa-plus mr-1"></i>เพิ่มคำศัพท์ใหม่</button>
                 </div>
+                <!-- Orthography to phoneme conversion with heading -->
+                <div class="mb-2">
+                    <label class="block text-sm font-medium text-green-700 mb-1">
+                        ถอดอักขรวิธีเป็นเสียง (Orthography → Phoneme):
+                    </label>
+                    <div class="flex flex-wrap gap-2 mb-4 items-center">
+                        <input type="text" id="dictOrthographyInput" placeholder="รูปอักขรวิธี (เช่น praik)" class="flex-grow p-2 border border-yellow-300 rounded-md font-mono">
+                        <button id="dictOrthographyConvertBtn" type="button" class="btn-secondary bg-yellow-400 hover:bg-yellow-500 px-3 py-1 rounded-md text-sm whitespace-nowrap">เติมเสียงอัตโนมัติ</button>
+                        <input type="text" id="dictOrthographyOutput" placeholder="เสียงที่ได้" class="flex-grow p-2 border border-yellow-300 rounded-md font-mono" readonly>
+                        <button id="dictAddFromOrthographyBtn" type="button" class="btn-primary bg-yellow-500 hover:bg-yellow-600 py-2 px-4 rounded-md whitespace-nowrap" style="display:none;"><i class="fas fa-plus mr-1"></i>เพิ่มศัพท์</button>
+                    </div>
+                </div>
+                <!-- Page size selector (moved below orthography input) -->
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-sm text-gray-700">จำนวนคำต่อหน้า:</span>
+                    <select id="dictPageSizeSelect" class="p-1 border border-yellow-300 rounded-md text-sm">
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="30">30</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <span class="text-sm text-gray-700">คำ</span>
+                </div>
+                <!-- Table container -->
                 <div id="dictionaryTableContainer" class="overflow-x-auto">
-                     <p class="text-center text-gray-500">พิมพ์ในช่องค้นหาเพื่อแสดงคำศัพท์ หรือเพิ่มคำศัพท์ใหม่ (แสดง ${currentLanguage.lexicon.length} คำ)</p>
+                    <p class="text-center text-gray-500">พิมพ์ในช่องค้นหาเพื่อแสดงคำศัพท์ หรือเพิ่มคำศัพท์ใหม่ (แสดง ${currentLanguage.lexicon.length} คำ)</p>
                 </div>`;
             dictContainer.appendChild(section);
 
             const searchInput = document.getElementById(searchId);
             const suggestionsContainer = document.getElementById(suggestionsId);
 
+            // Bind page size selector to update dictionaryItemsPerPage and refresh table
+            const pageSizeSelect = document.getElementById('dictPageSizeSelect');
+            if (pageSizeSelect) {
+                // Initialize the selector's value from global variable
+                pageSizeSelect.value = dictionaryItemsPerPage;
+                pageSizeSelect.addEventListener('change', (e) => {
+                    const val = parseInt(e.target.value);
+                    if (!isNaN(val) && val > 0) {
+                        dictionaryItemsPerPage = val;
+                    } else {
+                        dictionaryItemsPerPage = DICTIONARY_ITEMS_PER_PAGE;
+                    }
+                    dictionaryCurrentPage = 1;
+                    updateDictionaryDisplay();
+                });
+            }
+            // Bind orthography → phoneme conversion controls
+            const dictOrthoInput = document.getElementById('dictOrthographyInput');
+            const dictPhonOutput = document.getElementById('dictOrthographyOutput');
+            const dictConvertBtn = document.getElementById('dictOrthographyConvertBtn');
+            const dictAddBtn = document.getElementById('dictAddFromOrthographyBtn');
+            if (dictConvertBtn && dictOrthoInput && dictPhonOutput && dictAddBtn) {
+                dictConvertBtn.addEventListener('click', () => {
+                    const ortho = dictOrthoInput.value.trim();
+                    const phon = convertOrthographyToPhoneme(ortho);
+                    dictPhonOutput.value = phon;
+                    if (phon) {
+                        dictAddBtn.style.display = '';
+                    } else {
+                        dictAddBtn.style.display = 'none';
+                    }
+                });
+                dictAddBtn.addEventListener('click', () => {
+                    const ortho = dictOrthoInput.value.trim();
+                    const phon = dictPhonOutput.value.trim();
+                    if (!phon) return;
+                    // Store the custom orthography so showWordModal can prefill it
+                    pendingCustomOrthography = ortho;
+                    // Open modal with generated base form (phonemic) and no detailed phonetics/meaning
+                    showWordModal(null, phon);
+                    // Hide the add button to avoid repeated clicks
+                    dictAddBtn.style.display = 'none';
+                });
+            }
+
             const doSearch = () => {
                 const searchTerm = searchInput.value.trim().toLowerCase();
-                 if (searchTerm.length > 0) {
+                if (searchTerm.length > 0) {
+                    // Filter lexicon based on orthography, base form, meaning, phonetics and synonyms
                     const filtered = currentLanguage.lexicon.filter(entry =>
-                        getOrthographicForm(entry).toLowerCase().includes(searchTerm) || 
-                        entry.word.toLowerCase().includes(searchTerm) || 
+                        getOrthographicForm(entry).toLowerCase().includes(searchTerm) ||
+                        entry.word.toLowerCase().includes(searchTerm) ||
                         entry.meaning.toLowerCase().includes(searchTerm) ||
-                        (entry.phonetics && entry.phonetics.toLowerCase().includes(searchTerm)) || 
+                        (entry.phonetics && entry.phonetics.toLowerCase().includes(searchTerm)) ||
                         (entry.synonyms && entry.synonyms.some(s => s.toLowerCase().includes(searchTerm)))
-                    ).slice(0, 50); 
-                    renderDictionaryTable(filtered);
+                    );
+                    // Update pagination dataset and reset page to 1
+                    dictionaryCurrentData = filtered;
+                    dictionaryCurrentPage = 1;
+                    updateDictionaryDisplay();
                 } else {
-                    renderDictionaryTable(currentLanguage.lexicon.slice(0,50)); 
+                    // Reset dataset to full lexicon when search term is empty
+                    dictionaryCurrentData = currentLanguage.lexicon.slice();
+                    dictionaryCurrentPage = 1;
+                    updateDictionaryDisplay();
                 }
             };
 
@@ -4253,9 +4499,13 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
             });
 
             document.getElementById('clearSearchBtnDict').addEventListener('click', () => {
+                // Clear search input and suggestions
                 searchInput.value = '';
                 suggestionsContainer.classList.add('hidden');
-                renderDictionaryTable(currentLanguage.lexicon.slice(0,50)); 
+                // Reset dataset and pagination to full lexicon
+                dictionaryCurrentData = currentLanguage.lexicon.slice();
+                dictionaryCurrentPage = 1;
+                updateDictionaryDisplay();
             });
 
             document.addEventListener('click', function(event) {
@@ -4266,9 +4516,16 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
 
             document.getElementById('exportJsonBtnDict').addEventListener('click', exportDictionaryAsJSON);
             document.getElementById('exportCsvBtnDict').addEventListener('click', exportDictionaryAsCSV);
+            const xlsxBtn = document.getElementById('exportXlsxBtnDict');
+            if (xlsxBtn) {
+                xlsxBtn.addEventListener('click', exportLexiconToExcel);
+            }
             document.getElementById('showAddWordModalBtnDict').addEventListener('click', () => showWordModal());
 
-            renderDictionaryTable(currentLanguage.lexicon.slice(0,50)); 
+            // Initialize dataset and pagination, then render first page of dictionary
+            dictionaryCurrentData = currentLanguage.lexicon.slice();
+            dictionaryCurrentPage = 1;
+            updateDictionaryDisplay();
         }
 
         function renderDictionaryTable(lexiconSubset) {
@@ -4359,6 +4616,63 @@ function transliterateWordToSymbols(wordString, forDisplay = true, useFirstGraph
             }
             container.innerHTML += `<p class="text-xs text-gray-400 mt-1">แสดง ${lexiconSubset.length} จาก ${currentLanguage.lexicon.length} คำ</p>`;
         }
+
+        // Helper function to update dictionary display with pagination controls.
+        // This function uses the global variables dictionaryCurrentData and dictionaryCurrentPage
+        // to compute the correct slice of data for the current page and then calls
+        // renderDictionaryTable() to render the subset. After rendering, it appends
+        // simple previous/next navigation buttons and a page indicator to the dictionary
+        // table container. Buttons are disabled when at the first or last page.
+        window.updateDictionaryDisplay = function() {
+            const container = document.getElementById('dictionaryTableContainer');
+            if (!container) return;
+            // Determine dataset; fallback to full lexicon if not set
+            const data = (dictionaryCurrentData && Array.isArray(dictionaryCurrentData)) ? dictionaryCurrentData : (currentLanguage.lexicon || []);
+            const totalItems = data.length;
+            const itemsPerPage = (typeof dictionaryItemsPerPage !== 'undefined' && dictionaryItemsPerPage > 0) ? dictionaryItemsPerPage : DICTIONARY_ITEMS_PER_PAGE;
+            // Compute total number of pages (min 1)
+            const totalPages = Math.max(Math.ceil(totalItems / itemsPerPage), 1);
+            // Clamp current page within bounds
+            dictionaryCurrentPage = Math.max(1, Math.min(dictionaryCurrentPage, totalPages));
+            const startIndex = (dictionaryCurrentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const subset = data.slice(startIndex, endIndex);
+            // Render the subset table
+            renderDictionaryTable(subset);
+            // Create pagination controls
+            const navContainer = document.createElement('div');
+            navContainer.className = 'flex items-center justify-center space-x-2 mt-2';
+            // Previous page button
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'pagination-btn px-2 py-1 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-200 disabled:opacity-50';
+            prevBtn.innerHTML = '<i class="fas fa-arrow-left"></i>';
+            prevBtn.disabled = (dictionaryCurrentPage <= 1);
+            prevBtn.onclick = () => {
+                if (dictionaryCurrentPage > 1) {
+                    dictionaryCurrentPage--;
+                    updateDictionaryDisplay();
+                }
+            };
+            // Page indicator
+            const pageIndicator = document.createElement('span');
+            pageIndicator.className = 'text-sm text-gray-700';
+            pageIndicator.textContent = `หน้า ${dictionaryCurrentPage} / ${totalPages}`;
+            // Next page button
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'pagination-btn px-2 py-1 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-200 disabled:opacity-50';
+            nextBtn.innerHTML = '<i class="fas fa-arrow-right"></i>';
+            nextBtn.disabled = (dictionaryCurrentPage >= totalPages);
+            nextBtn.onclick = () => {
+                if (dictionaryCurrentPage < totalPages) {
+                    dictionaryCurrentPage++;
+                    updateDictionaryDisplay();
+                }
+            };
+            navContainer.appendChild(prevBtn);
+            navContainer.appendChild(pageIndicator);
+            navContainer.appendChild(nextBtn);
+            container.appendChild(navContainer);
+        };
         
         window.showSynonymsModal = (wordId) => {
             const word = currentLanguage.lexicon.find(w => w.id === wordId);
@@ -4650,7 +4964,19 @@ window.openEvolutionModalForWord = (wordId) => {
             modal.className = 'fixed inset-0 z-[70] flex items-center justify-center modal p-4'; 
 
             const initialWordValue = existingWord ? existingWord.word : (generatedWordPhoneticForm || '');
-            const initialCustomOrthography = existingWord ? (existingWord.customOrthography || '') : ''; // Ensure it's a string
+            // Determine initial custom orthography: use existing if editing, or pendingCustomOrthography when adding from orthography → phoneme conversion.
+            let initialCustomOrthography;
+            if (existingWord) {
+                initialCustomOrthography = existingWord.customOrthography || '';
+            } else {
+                // Use pendingCustomOrthography if set, then clear it
+                if (pendingCustomOrthography) {
+                    initialCustomOrthography = pendingCustomOrthography;
+                    pendingCustomOrthography = null;
+                } else {
+                    initialCustomOrthography = '';
+                }
+            }
             
             let initialPhonetics;
             if (existingWord && existingWord.phonetics) { initialPhonetics = existingWord.phonetics; } 
