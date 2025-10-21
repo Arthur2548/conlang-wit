@@ -2820,7 +2820,8 @@ function convertOrthographyToPhoneme(orthographyStr) {
                     const customSymbolMap = {};
                     currentLanguage.orthography.customSymbols.forEach(sym => { customSymbolMap[sym.sound] = sym; });
                     // Try to match the generated word to custom symbols (longest match first)
-                    let word = finalPhoneticWord;
+                    // Use a display form without syllable delimiters when mapping to symbols
+                    let word = String(finalPhoneticWord).replace(/\./g, '');
                     let i = 0;
                     while (i < word.length) {
                         let matched = false;
@@ -2847,8 +2848,9 @@ function convertOrthographyToPhoneme(orthographyStr) {
                         }
                     }
                 } else {
-                    // Fallback: use plain orthography string
-                    orthographyHtml = getOrthographicForm({word: finalPhoneticWord, customOrthography: null}, true, false);
+                    // Fallback: use plain orthography string but strip syllable delimiters for display
+                    const displayPhoneticNoDots = String(finalPhoneticWord).replace(/\./g, '');
+                    orthographyHtml = getOrthographicForm({word: displayPhoneticNoDots, customOrthography: null}, true, false);
                 }
 
                 let randomMeaning = "";
@@ -2864,8 +2866,9 @@ function convertOrthographyToPhoneme(orthographyStr) {
                 const wordDisplaySpan = document.createElement('span');
                 wordDisplaySpan.className = 'font-semibold mr-2 flex items-center';
                 // Remove syllable delimiters from the phonetic string when displaying to the user
-                const finalPhoneticWordDisplay = finalPhoneticWord.replace(/\./g, '');
-                wordDisplaySpan.innerHTML = `${orthographyHtml} <span class="text-sm text-gray-500 font-normal font-mono ml-2">(${finalPhoneticWordDisplay})</span> <span class="text-xs text-blue-400 font-normal font-mono ml-2">[ฐานดิบ: ${rawWordFormBeforeActiveChanges}]</span>`;
+                const finalPhoneticWordDisplay = String(finalPhoneticWord).replace(/\./g, '');
+                const rawBaseNoDots = String(rawWordFormBeforeActiveChanges).replace(/\./g, '');
+                wordDisplaySpan.innerHTML = `${orthographyHtml} <span class="text-sm text-gray-500 font-normal font-mono ml-2">(${finalPhoneticWordDisplay})</span> <span class="text-xs text-blue-400 font-normal font-mono ml-2">[ฐานดิบ: ${rawBaseNoDots}]</span>`;
                 if (randomMeaning) {
                      wordDisplaySpan.innerHTML += ` <span class="text-xs text-blue-500 ml-2">หมายถึง: ${randomMeaning}</span>`;
                 }
@@ -5062,7 +5065,7 @@ window.openEvolutionModalForWord = (wordId) => {
                     <h3 class="text-xl font-bold mb-4">${existingWord ? 'แก้ไขคำศัพท์: ' + getOrthographicForm(existingWord) : 'เพิ่มคำศัพท์ใหม่'}</h3>
                     <p class="text-xs text-gray-500 mb-2">รูปคำศัพท์ (รูปฐาน) ควรเป็นรูปเสียงสุดท้ายหลังใช้กฎ Active Sound Changes และรวมเสียงวรรณยุกต์แล้ว (ถ้ามี)</p>
                     <div class="space-y-3">
-                        <div><label class="block text-sm font-medium">คำศัพท์ (รูปฐานเสียง):</label><input type="text" id="modalWord" value="${initialWordValue}" class="w-full p-2 border rounded-md font-mono"></div>
+                        <div><label class="block text-sm font-medium">คำศัพท์ (รูปฐานเสียง):</label><input type="text" id="modalWord" value="${String(initialWordValue).replace(/\./g,'')}" class="w-full p-2 border rounded-md font-mono"></div>
                         <div>
                             <label class="block text-sm font-medium">คำศัพท์ (อักขรวิธี - กำหนดเอง ถ้าต้องการ):</label>
                             <div class="relative">
