@@ -2887,11 +2887,44 @@ function convertOrthographyToPhoneme(orthographyStr) {
         function generateSyllable() {
             const ph = currentLanguage.phonology;
             if (ph.syllableStructures.length === 0) return { base: "err", phonetic: "err" };
-            if (ph.consonants.length === 0 && !ph.allowVowelInitial) { 
+
+            // Build phoneme pools that include any sounds defined in graphemeMappings.
+            const gm = Array.isArray(ph.graphemeMappings) ? ph.graphemeMappings : [];
+            const vowelPool = Array.from(new Set([...(ph.vowels || []), ...gm.filter(m => m.vowelGraphemes && m.vowelGraphemes.length > 0).map(m => m.sound)]));
+            const consonantPool = Array.from(new Set([...(ph.consonants || []), ...gm.filter(m => !(m.vowelGraphemes && m.vowelGraphemes.length > 0)).map(m => m.sound)]));
+
+            // Helper: escape for regex
+            const escapeRegex = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+            // Tokenize a string into phoneme tokens using the provided pool (greedy longest-match)
+            function tokenizeByPool(str, pool) {
+                if (!str || !pool || pool.length === 0) return str.split('');
+                let rem = String(str);
+                const tokens = [];
+                // Sort pool by length desc so longest matches are preferred
+                const sorted = [...pool].sort((a,b)=>b.length - a.length);
+                while (rem.length > 0) {
+                    let matched = null;
+                    for (const p of sorted) {
+                        if (rem.startsWith(p)) { matched = p; break; }
+                    }
+                    if (matched) {
+                        tokens.push(matched);
+                        rem = rem.slice(matched.length);
+                    } else {
+                        // Fallback single character
+                        tokens.push(rem[0]);
+                        rem = rem.slice(1);
+                    }
+                }
+                return tokens;
+            }
+
+            if (consonantPool.length === 0 && !ph.allowVowelInitial) { 
                 console.warn("Cannot generate syllable: No consonants defined and vowel initial not allowed.");
                 return { base: "errC", phonetic: "errC" };
             }
-            if (ph.vowels.length === 0) {
+            if (vowelPool.length === 0) {
                  console.warn("Cannot generate syllable: No vowels defined.");
                 return { base: "errV", phonetic: "errV" };
             }
@@ -2913,13 +2946,14 @@ function convertOrthographyToPhoneme(orthographyStr) {
                 if (onsetMatch) onsetLength = onsetMatch[0].length;
 
                 if (onsetLength > 0) { 
-                    const availableInitials = ph.allowedInitialConsonants.filter(c => ph.consonants.includes(c));
-                    const availableClusters = ph.allowedConsonantClusters.filter(cl => 
-                        cl.length <= ph.maxClusterLength && 
-                        !ph.forbiddenConsonantClusters.includes(cl) && 
-                        cl.split('').every(c => ph.consonants.includes(c)) && 
-                        availableInitials.includes(cl[0]) 
-                    );
+                        const availableInitials = ph.allowedInitialConsonants.filter(c => consonantPool.includes(c));
+                        const availableClusters = ph.allowedConsonantClusters.filter(cl => {
+                            const tokens = tokenizeByPool(cl, consonantPool);
+                            return tokens.length <= ph.maxClusterLength &&
+                                !ph.forbiddenConsonantClusters.includes(cl) &&
+                                tokens.every(t => consonantPool.includes(t)) &&
+                                availableInitials.includes(tokens[0]);
+                        });
 
                     if (onsetLength > 1) { 
                         const fittingClusters = availableClusters.filter(cl => cl.length === onsetLength);
@@ -2952,15 +2986,15 @@ function convertOrthographyToPhoneme(orthographyStr) {
                     if (vowelMatch) {
                         const vowelSegment = vowelMatch[0];
                         for (let k = 0; k < vowelSegment.length; k++) {
-                            if (ph.vowels.length > 0) {
-                                const chosenVowel = ph.vowels[Math.floor(Math.random() * ph.vowels.length)];
-                                syllableBase += chosenVowel;
-                                // update last vowel used
-                                lastVowelUsed = chosenVowel;
-                            } else { validSyllable = false; break; }
+                                if (vowelPool.length > 0) {
+                                    const chosenVowel = vowelPool[Math.floor(Math.random() * vowelPool.length)];
+                                    syllableBase += chosenVowel;
+                                    // update last vowel used
+                                    lastVowelUsed = chosenVowel;
+                                } else { validSyllable = false; break; }
                         }
                         if(validSyllable) tempStructure = tempStructure.substring(vowelSegment.length);
-                    } else if (!syllableBase.match(new RegExp(`[${ph.vowels.join('')}]`, 'i'))) { 
+                } else if (!vowelPool.some(v => syllableBase.startsWith(v))) { 
                          validSyllable = false; 
                     }
                 }
@@ -2977,11 +3011,11 @@ function convertOrthographyToPhoneme(orthographyStr) {
 
                 if (validSyllable && tempStructure.length > 0 && !applyNoCodaDueToVowel) { 
                     const codaStructure = tempStructure;
-                    const availableFinals = ph.allowedFinalConsonants.filter(c => ph.consonants.includes(c));
-                    const availableCodaClusters = ph.allowedCodaClusters.filter(cc => 
-                        cc.split('').every(c => ph.consonants.includes(c)) &&
-                        !ph.forbiddenConsonantClusters.includes(cc) 
-                    );
+                    const availableFinals = ph.allowedFinalConsonants.filter(c => consonantPool.includes(c));
+                    const availableCodaClusters = ph.allowedCodaClusters.filter(cc => {
+                        const tokens = tokenizeByPool(cc, consonantPool);
+                        return tokens.every(t => consonantPool.includes(t)) && !ph.forbiddenConsonantClusters.includes(cc);
+                    });
 
                     if (ph.allowClusterCoda && codaStructure.length > 1) { 
                         const fittingCodaClusters = availableCodaClusters.filter(cc => cc.length === codaStructure.length);
@@ -2989,7 +3023,7 @@ function convertOrthographyToPhoneme(orthographyStr) {
                             syllableBase += fittingCodaClusters[Math.floor(Math.random() * fittingCodaClusters.length)];
                         } else { 
                             for (let k = 0; k < codaStructure.length; k++) {
-                                if (availableFinals.length > 0) syllableBase += availableFinals[Math.floor(Math.random() * availableFinals.length)];
+                        if (availableFinals.length > 0) syllableBase += availableFinals[Math.floor(Math.random() * availableFinals.length)];
                                 else if (!ph.allowNoCoda) { validSyllable = false; break; }
                             }
                         }
@@ -3006,10 +3040,11 @@ function convertOrthographyToPhoneme(orthographyStr) {
                  if (!validSyllable) { attempts++; continue; }
 
 
-                if (!ph.allowVowelInitial && ph.vowels.includes(syllableBase[0])) validSyllable = false;
+                if (!ph.allowVowelInitial && vowelPool.some(v => syllableBase.startsWith(v))) validSyllable = false;
                 
                 const lastChar = syllableBase.slice(-1);
-                const lastSegmentIsConsonant = ph.consonants.includes(lastChar) || 
+                // Determine if the word ends with a consonant token
+                const lastSegmentIsConsonant = consonantPool.some(c => syllableBase.endsWith(c)) || 
                                                (ph.allowedCodaClusters.some(cc => syllableBase.endsWith(cc)) && syllableBase.length > 1);
 
                 if (lastSegmentIsConsonant && ph.forbiddenFinalSounds.some(s => syllableBase.endsWith(s))) {
@@ -3040,8 +3075,10 @@ function convertOrthographyToPhoneme(orthographyStr) {
                 if (ph.hasTones && ph.tones.length > 0) {
                     const applicableTones = ph.tones.filter(tone => {
                         for (const tpRule of (ph.tonePhonotactics || [])) {
-                             const initialPhonemesForForm = phoneticForm.match(new RegExp(`^(${ph.consonants.join('|')})*`))?.[0] || "";
-                             const finalPhonemesForForm = phoneticForm.match(new RegExp(`(${ph.consonants.join('|')})*$ `))?.[0] || ""; 
+                                     const initialPattern = `^(?:${consonantPool.map(escapeRegex).join('|')})*`;
+                                     const finalPattern = `(?:${consonantPool.map(escapeRegex).join('|')})*$`;
+                                     const initialPhonemesForForm = phoneticForm.match(new RegExp(initialPattern))?.[0] || "";
+                                     const finalPhonemesForForm = phoneticForm.match(new RegExp(finalPattern))?.[0] || ""; 
 
                             const initialMatch = tpRule.initials.length === 0 || tpRule.initials.some(init => initialPhonemesForForm.includes(init));
                             const finalMatch = tpRule.finals.length === 0 || tpRule.finals.some(fin => finalPhonemesForForm.includes(fin));
@@ -3071,7 +3108,7 @@ function convertOrthographyToPhoneme(orthographyStr) {
             }
         
             // Fallback if syllable generation fails after many attempts
-            let fallbackSyllable = (ph.consonants[0] || "p") + (ph.vowels[0] || "a");
+            let fallbackSyllable = (consonantPool[0] || "p") + (vowelPool[0] || "a");
             console.warn("Syllable generation fallback after 100 attempts. Using:", fallbackSyllable);
             return { base: fallbackSyllable, phonetic: fallbackSyllable };
         }
@@ -3972,6 +4009,8 @@ function convertOrthographyToPhoneme(orthographyStr) {
             htmlResult += `</div>`;
 
             resultDiv.innerHTML = htmlResult;
+            // Populate any voice-selects added inside the conjugation result so audio controls work
+            if (typeof updateVoiceSelects === 'function') updateVoiceSelects();
             const filterSelect = document.getElementById('conjTestCategoryFilter');
             if(filterSelect) filterSelect.onchange = () => updateConjugationTestTable(wordEntry.id);
         }
@@ -4070,7 +4109,14 @@ function convertOrthographyToPhoneme(orthographyStr) {
                                     <td class="px-2 py-1">${optIndex === 0 ? cat.name : ''}</td>
                                     <td class="px-2 py-1">${option} ${isManual ? '<em class=\"text-xs text-blue-500\">(manual)</em>' : ''}</td>
                                     <td class="px-2 py-1 font-mono">${orthoCell}</td>
-                                    <td class="px-2 py-1 font-mono text-gray-600">${formattedPhoneticDisplay}</td>
+                                    <td class="px-2 py-1 font-mono text-gray-600">
+                                        <div class="dict-phonetic-container inline-flex items-center" data-phonetic="${inflectedPhoneticForm}" data-voiceid="${wordEntry && wordEntry.voiceId ? wordEntry.voiceId : ''}">
+                                            <span class="mr-2">${formattedPhoneticDisplay}</span>
+                                            <button type="button" class="text-blue-500 ml-1 dict-phonetics-btn" title="ฟังเสียง"><i class="fas fa-headphones"></i></button>
+                                            <button type="button" class="accent-toggle-btn text-blue-500 ml-1" title="เปลี่ยนสำเนียง"><i class="fas fa-language"></i></button>
+                                            <select class="voice-select ml-1 text-xs p-0.5 border rounded hidden" data-hide-after-select="true" data-selected-voice="${wordEntry && wordEntry.voiceId ? wordEntry.voiceId : ''}"></select>
+                                        </div>
+                                    </td>
                                    </tr>`;
                 });
                 categoryColorIndex++;
@@ -4107,6 +4153,7 @@ function convertOrthographyToPhoneme(orthographyStr) {
             genericModalTitle.innerHTML = `การผันคำของ: ${getOrthographicForm(word)}`;
             genericModalContent.innerHTML = content;
             genericModalFooter.innerHTML = `<button id="saveConjugationOverridesBtn" class="btn-primary">บันทึกการแก้ไข</button> <button class="btn-secondary" onclick="closeGenericModal.click()">ปิด</button>`;
+            if (typeof updateVoiceSelects === 'function') updateVoiceSelects();
             
             document.getElementById('saveConjugationOverridesBtn').onclick = () => {
                 saveConjugationOverrides(wordId);
@@ -4212,12 +4259,19 @@ function convertOrthographyToPhoneme(orthographyStr) {
                                    onchange="toggleManualInflectionInputs(this, '${manualInflectionKey}', '${ruleBasedOrthographic}', '${ruleBasedPhonetic}', ${wordId})">
                         </td>
                         <td class="px-2 py-1 font-mono">${orthoCell}</td>
-                        <td class="px-2 py-1">
-                            <input type="text" class="w-full p-0.5 border rounded text-xs font-mono manual-phonetic-input" data-key="${manualInflectionKey}" 
-                                   value="${initialPhoneticValue}" ${!currentManualOverride ? 'disabled' : ''} 
-                                   placeholder="รูปเสียง (ดิบ)" oninput="updateFormattedPhoneticDisplay(this, '${manualInflectionKey}')">
-                            <span class="text-xs text-gray-500 manual-phonetic-display" data-key="${manualInflectionKey}" contenteditable="true" spellcheck="false" title="สามารถแก้ไขตัวอักษรและตำแหน่งจุดได้โดยตรง">${displayPhoneticFormatted}</span>
-                        </td>
+                            <td class="px-2 py-1">
+                                <input type="text" class="w-full p-0.5 border rounded text-xs font-mono manual-phonetic-input" data-key="${manualInflectionKey}" 
+                                       value="${initialPhoneticValue}" ${!currentManualOverride ? 'disabled' : ''} 
+                                       placeholder="รูปเสียง (ดิบ)" oninput="updateFormattedPhoneticDisplay(this, '${manualInflectionKey}')">
+                                <span class="text-xs text-gray-500 manual-phonetic-display" data-key="${manualInflectionKey}" contenteditable="true" spellcheck="false" title="สามารถแก้ไขตัวอักษรและตำแหน่งจุดได้โดยตรง">${displayPhoneticFormatted}</span>
+                                <div class="mt-2">
+                                    <div class="dict-phonetic-container inline-flex items-center" data-phonetic="${initialPhoneticValue}" data-voiceid="${word && word.voiceId ? word.voiceId : ''}">
+                                        <button type="button" class="text-blue-500 dict-phonetics-btn mr-2" title="ฟังเสียง"><i class="fas fa-headphones"></i></button>
+                                        <button type="button" class="accent-toggle-btn text-blue-500 mr-2" title="เปลี่ยนสำเนียง"><i class="fas fa-language"></i></button>
+                                        <select class="voice-select ml-1 text-xs p-0.5 border rounded hidden" data-hide-after-select="true" data-selected-voice="${word && word.voiceId ? word.voiceId : ''}"></select>
+                                    </div>
+                                </div>
+                            </td>
                     </tr>`;
 // (manual-phonetic-display is now fully editable; .phon-dot event delegation removed)
                 });
@@ -6658,7 +6712,7 @@ window.openEvolutionModalForWord = (wordId) => {
             let phoneticRow = `<tr><td class="px-3 py-2 font-medium">รูปเสียง</td>`;
             // Standard (base) phonetic form
             const stdPhon = wordEntry.word || '';
-            phoneticRow += `<td class="px-3 py-2 font-mono"><div class="inline-flex items-center" data-phonetic="${stdPhon}" data-voiceid="${wordEntry.voiceId || ''}"><span>${stdPhon}</span><button type="button" class="text-blue-500 ml-1 dialect-phonetics-btn" title="ฟังเสียง"><i class="fas fa-headphones"></i></button></div></td>`;
+            phoneticRow += `<td class="px-3 py-2 font-mono"><div class="inline-flex items-center dict-phonetic-container" data-phonetic="${stdPhon}" data-voiceid="${wordEntry.voiceId || ''}"><span>${stdPhon}</span><button type="button" class="text-blue-500 ml-1 dialect-phonetics-btn" title="ฟังเสียง"><i class="fas fa-headphones"></i></button><button type="button" class="accent-toggle-btn text-blue-500 ml-1" title="เปลี่ยนสำเนียง"><i class="fas fa-language"></i></button><select class="voice-select ml-1 text-xs p-0.5 border rounded hidden" data-hide-after-select="true" data-selected-voice="${wordEntry.voiceId || ''}"></select></div></td>`;
 
             currentLanguage.regions.filter(r => r.toLowerCase() !== 'standard').forEach(region => {
                 const manualForm = (wordEntry.dialectalForms || []).find(df => df.regionName === region);
@@ -6683,13 +6737,15 @@ window.openEvolutionModalForWord = (wordId) => {
                 orthoRow += `<td class="px-3 py-2 font-mono">${dialectOrthographic} ${source}</td>`;
                 // Sanitize the value for the data attribute (remove HTML tags) but keep original content for display
                 const sanitizedDialect = typeof dialectPhonetic === 'string' ? dialectPhonetic.replace(/<[^>]*>/g, '') : '';
-                phoneticRow += `<td class="px-3 py-2 font-mono"><div class="inline-flex items-center" data-phonetic="${sanitizedDialect}" data-voiceid="${wordEntry.voiceId || ''}"><span>${dialectPhonetic}</span><button type="button" class="text-blue-500 ml-1 dialect-phonetics-btn" title="ฟังเสียง"><i class="fas fa-headphones"></i></button></div></td>`;
+                phoneticRow += `<td class="px-3 py-2 font-mono"><div class="inline-flex items-center dict-phonetic-container" data-phonetic="${sanitizedDialect}" data-voiceid="${wordEntry.voiceId || ''}"><span>${dialectPhonetic}</span><button type="button" class="text-blue-500 ml-1 dialect-phonetics-btn" title="ฟังเสียง"><i class="fas fa-headphones"></i></button><button type="button" class="accent-toggle-btn text-blue-500 ml-1" title="เปลี่ยนสำเนียง"><i class="fas fa-language"></i></button><select class="voice-select ml-1 text-xs p-0.5 border rounded hidden" data-hide-after-select="true" data-selected-voice="${wordEntry.voiceId || ''}"></select></div></td>`;
             });
             orthoRow += `</tr>`;
             phoneticRow += `</tr>`;
 
             tbody.innerHTML = orthoRow + phoneticRow;
             container.appendChild(table);
+            // Populate voice selects inside the dialect comparison table so users can pick accents
+            if (typeof updateVoiceSelects === 'function') updateVoiceSelects();
             container.innerHTML += `<div class="text-right mt-2"><button class="text-xs btn-secondary" onclick="openDialectModalForWord(${wordEntry.id})">จัดการภาษาถิ่นของคำนี้ละเอียด</button></div>`;
         }
 
@@ -7371,8 +7427,12 @@ window.openEvolutionModalForWord = (wordId) => {
                 <div class="flex gap-2 mb-2 items-center flex-wrap">
                     <label for="nameTypeSelectTools" class="text-sm">ประเภท:</label>
                     <select id="nameTypeSelectTools" class="p-1 border rounded-md text-sm"><option value="person">ชื่อคน</option><option value="place">ชื่อสถานที่</option></select>
+                    <label for="minSyllablesTools" class="text-sm ml-2">พยางค์ขั้นต่ำ:</label>
+                    <input type="number" id="minSyllablesTools" value="2" min="1" max="6" class="w-14 p-1 border rounded-md text-sm">
+                    <label for="maxSyllablesTools" class="text-sm ml-2">พยางค์สูงสุด:</label>
+                    <input type="number" id="maxSyllablesTools" value="3" min="1" max="8" class="w-14 p-1 border rounded-md text-sm">
                     <label for="numNamesToGenerateTools" class="text-sm ml-2">จำนวน:</label>
-                    <input type="number" id="numNamesToGenerateTools" value="3" min="1" max="10" class="w-16 p-1 border rounded-md text-sm">
+                    <input type="number" id="numNamesToGenerateTools" value="3" min="1" max="20" class="w-16 p-1 border rounded-md text-sm">
                     <button id="generateNamesButtonTools" class="btn-primary bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded-md text-sm">สร้างชื่อ</button>
                 </div>
                 <ul id="generatedNamesListTools" class="list-disc list-inside text-sm min-h-[40px] p-2 bg-gray-50 rounded border"></ul>`;
@@ -7498,14 +7558,48 @@ window.openEvolutionModalForWord = (wordId) => {
             if (currentLanguage.phonology.consonants.length === 0 || currentLanguage.phonology.vowels.length === 0) {
                 alert("กรุณากำหนดพยัญชนะและสระในระบบเสียงก่อน"); return;
             }
+            // Read min/max syllable inputs (fall back to defaults)
+            const minSyll = Math.max(1, parseInt(document.getElementById('minSyllablesTools')?.value || '2'));
+            const maxSyll = Math.max(minSyll, parseInt(document.getElementById('maxSyllablesTools')?.value || String(minSyll + 1)));
             for (let i = 0; i < numNames; i++) {
-                const numSyll = (nameType === 'person') ? Math.floor(Math.random() * 2) + 2 : Math.floor(Math.random() * 3) + 2;  
-                let nameForm = '';
-                for (let j = 0; j < numSyll; j++) { nameForm += generateSyllable(); }
-                nameForm = nameForm.charAt(0).toUpperCase() + nameForm.slice(1); 
-                const displayName = transliterateWordToSymbols(nameForm);
-                listElement.innerHTML += `<li class="text-sm">${displayName} <span class="text-xs text-gray-400">(${nameForm})</span></li>`;
+                // Choose a syllable count in range [minSyll, maxSyll]
+                const numSyll = Math.floor(Math.random() * (maxSyll - minSyll + 1)) + minSyll;
+                let phoneticPieces = [];
+                for (let j = 0; j < numSyll; j++) {
+                    const syl = generateSyllable();
+                    // syl.phonetic may include tone markers; we remove syllable separators (dots)
+                    phoneticPieces.push(syl.phonetic.replace(/\./g, ''));
+                }
+                // Combine phonetic pieces without separators for audio and internal forms
+                const combinedPhonetic = phoneticPieces.join('');
+                // Transliterate the combined phonetic string into orthography (no spaces)
+                const displayName = transliterateWordToSymbols(combinedPhonetic, true, true);
+                // Human-friendly simple name (base form without tone markers for label)
+                const simpleBase = combinedPhonetic.replace(/[⁰-⁹\^]/g, '');
+
+                const li = document.createElement('li');
+                li.className = 'text-sm p-1';
+                li.innerHTML = `
+                    <div class="inline-flex items-center dict-phonetic-container" data-phonetic="${combinedPhonetic}">
+                        <span>
+                            ${displayName} <span class="text-xs text-gray-400">(${simpleBase})</span>
+                        </span>
+                        <button type="button" class="text-blue-500 ml-2 dict-phonetics-btn" title="ฟังเสียง"><i class="fas fa-headphones"></i></button>
+                        <button type="button" class="accent-toggle-btn text-blue-500 ml-1" title="เปลี่ยนสำเนียง"><i class="fas fa-language"></i></button>
+                        <select class="voice-select ml-1 text-xs p-0.5 border rounded hidden" data-hide-after-select="true"></select>
+                    </div>`;
+                listElement.appendChild(li);
             }
+
+            // Populate any voice selects we just added so the user can choose accents immediately
+            try {
+                if (typeof updateVoiceSelects === 'function') updateVoiceSelects();
+                // Also apply per-word voice persistence hooks if available
+                document.querySelectorAll('#generatedNamesListTools select.voice-select').forEach(s => {
+                    if (typeof __ensureStableWordKeyForSelect === 'function') try { __ensureStableWordKeyForSelect(s); } catch(e){}
+                    if (typeof applyPerWordVoice === 'function') try { applyPerWordVoice(s); } catch(e){}
+                });
+            } catch (e) { console.warn('Voice select population for generated names failed', e); }
         }
 
         function generateSentence() {
