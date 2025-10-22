@@ -2781,6 +2781,90 @@ function convertOrthographyToPhoneme(orthographyStr) {
     return result;
 }
 
+// Small helper to escape HTML when injecting strings into table cells
+function escapeHtml(str) {
+    if (!str && str !== 0) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// Compute a deterministic latin (roman) transliteration from a phonemic string
+// using the graphemeMappings in the current language. This mirrors the
+// 'latin' branch of transliterateWordToSymbols but is callable regardless of
+// the configured writingSystem. useFirstGraphemeOnly forces deterministic
+// choice of the first grapheme in mapping lists.
+function computeRomanization(wordString, useFirstGraphemeOnly = true) {
+    if (!wordString || typeof wordString !== 'string') return '';
+    const ph = currentLanguage.phonology || {};
+    const graphemeMappings = ph.graphemeMappings || [];
+    const baseWord = String(wordString);
+    let remainingWord = baseWord;
+    let transliterated = '';
+
+    const sortedMappings = [...graphemeMappings].sort((a, b) => b.sound.length - a.sound.length);
+    let globalPos = 0;
+    let syllableStart = 0;
+
+    while (remainingWord.length > 0) {
+        // Skip delimiters
+        if (remainingWord.startsWith('.') || remainingWord.startsWith(' ')) {
+            remainingWord = remainingWord.substring(1);
+            globalPos++;
+            syllableStart = globalPos;
+            continue;
+        }
+        let found = false;
+        for (const gm of sortedMappings) {
+            if (remainingWord.startsWith(gm.sound)) {
+                const isConsonantSound = (ph.consonants || []).includes(gm.sound);
+                const isVowelSound = (ph.vowels || []).includes(gm.sound);
+                let potentialGraphemes = [];
+
+                // Determine syllable end
+                let nextDelimIndex = baseWord.indexOf('.', globalPos);
+                if (nextDelimIndex === -1) nextDelimIndex = baseWord.length;
+                const syllableEndPos = nextDelimIndex;
+                const isInitialSoundSegment = (globalPos === syllableStart);
+                const isFinalSoundSegment = (globalPos + gm.sound.length === syllableEndPos);
+
+                if (isConsonantSound) {
+                    if (isInitialSoundSegment && gm.initialGraphemes && gm.initialGraphemes.length > 0) {
+                        potentialGraphemes = gm.initialGraphemes;
+                    } else if (isFinalSoundSegment && gm.finalGraphemes && gm.finalGraphemes.length > 0) {
+                        potentialGraphemes = gm.finalGraphemes;
+                    } else {
+                        if (gm.initialGraphemes && gm.initialGraphemes.length > 0) potentialGraphemes = gm.initialGraphemes;
+                        else if (gm.finalGraphemes && gm.finalGraphemes.length > 0) potentialGraphemes = gm.finalGraphemes;
+                    }
+                } else if (isVowelSound) {
+                    if (gm.vowelGraphemes && gm.vowelGraphemes.length > 0) potentialGraphemes = gm.vowelGraphemes;
+                }
+
+                let chosen = null;
+                if (potentialGraphemes.length > 0) {
+                    chosen = useFirstGraphemeOnly ? potentialGraphemes[0] : potentialGraphemes[Math.floor(Math.random() * potentialGraphemes.length)];
+                }
+                if (chosen) {
+                    transliterated += chosen;
+                    globalPos += gm.sound.length;
+                    remainingWord = remainingWord.substring(gm.sound.length);
+                    found = true;
+                    break;
+                } else {
+                    // No grapheme choice available; break to avoid infinite loop
+                    break;
+                }
+            }
+        }
+        if (!found) {
+            transliterated += remainingWord[0];
+            remainingWord = remainingWord.substring(1);
+            globalPos += 1;
+        }
+    }
+    return transliterated;
+}
+
 
         function generateAndDisplayWords() {
             const minSyllables = parseInt(document.getElementById('minSyllables').value);
@@ -4631,6 +4715,7 @@ function convertOrthographyToPhoneme(orthographyStr) {
                         ${isLogographic ? '<th class="px-4 py-2 text-left text-xs font-medium text-yellow-700 uppercase tracking-wider">คำศัพท์ (ภาพ)</th>' : ''}
                         <th class="px-4 py-2 text-left text-xs font-medium text-yellow-700 uppercase tracking-wider">คำศัพท์ (อักขรวิธี)</th>
                         <th class="px-4 py-2 text-left text-xs font-medium text-yellow-700 uppercase tracking-wider">คำศัพท์ (รูปฐานเสียง)</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-yellow-700 uppercase tracking-wider">Romanization</th>
                         <th class="px-4 py-2 text-left text-xs font-medium text-yellow-700 uppercase tracking-wider">การออกเสียง (ละเอียด)</th>
                         <th class="px-4 py-2 text-left text-xs font-medium text-yellow-700 uppercase tracking-wider">ความหมาย</th>
                         <th class="px-4 py-2 text-left text-xs font-medium text-yellow-700 uppercase tracking-wider">ชนิดของคำ</th>
@@ -4651,6 +4736,7 @@ function convertOrthographyToPhoneme(orthographyStr) {
                 cells += `
                     <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700 font-semibold">${isLogographic ? displayWord : `<a href=\"#\" class=\"text-purple-600 hover:underline\" onclick=\"event.preventDefault(); showWordDetailPopup(${entry.id})\">${displayWord}</a>`}</td>
                     <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500 font-mono">${entry.word}</td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700 font-mono">${entry.romanization ? escapeHtml(String(entry.romanization)) : ''}</td>
                     <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500 font-mono">
                         ${entry.phonetics 
                             ? `<div class="flex items-center flex-wrap dict-phonetic-container" data-phonetic="${entry.phonetics}" data-voiceid="${entry.voiceId || ''}">
@@ -5460,6 +5546,22 @@ window.openEvolutionModalForWord = (wordId) => {
                         ...(isLogographic ? { logographImage: logographImage || '' } : {})
                     };
 
+                // If writing system is custom, compute and persist a romanization field
+                try {
+                    const writingSystem = currentLanguage.orthography && currentLanguage.orthography.writingSystem;
+                    if (writingSystem === 'custom') {
+                        // Compute a deterministic latin form from the base phonemic word
+                        const base = updatedWord.word || '';
+                        const roman = computeRomanization(base, true) || null;
+                        if (roman) updatedWord.romanization = roman;
+                    } else {
+                        // For latin/logographic or other systems, clear romanization unless user previously set one
+                        if (!updatedWord.romanization) updatedWord.romanization = null;
+                    }
+                } catch (e) {
+                    console.warn('Romanization compute failed', e);
+                }
+
                 if (!updatedWord.word || !updatedWord.meaning || !updatedWord.partOfSpeech) {
                     alert('กรุณากรอกข้อมูล: คำศัพท์ (รูปฐานเสียง), ความหมาย, และชนิดของคำ'); return;
                 }
@@ -5513,9 +5615,9 @@ window.openEvolutionModalForWord = (wordId) => {
 
         function exportDictionaryAsCSV() {
             if (!currentLanguage.lexicon || currentLanguage.lexicon.length === 0) { alert("พจนานุกรมว่างเปล่า"); return; }
-            const headers = ['ID', 'Word(BasePhonemic)', 'Word(Orthographic)', 'CustomOrthography', 'Phonetics(Detailed)', 'Meaning', 'PartOfSpeech', 'Gender', 'Example', 'Synonyms', 'EtymologyRoots', 'EtymologyNotes'];
+            const headers = ['ID', 'Word(BasePhonemic)', 'Word(Orthographic)', 'Romanization', 'CustomOrthography', 'Phonetics(Detailed)', 'Meaning', 'PartOfSpeech', 'Gender', 'Example', 'Synonyms', 'EtymologyRoots', 'EtymologyNotes'];
             const rows = currentLanguage.lexicon.map(entry => [
-                entry.id, entry.word, getOrthographicForm(entry, false), entry.customOrthography || '', entry.phonetics, entry.meaning,
+                entry.id, entry.word, getOrthographicForm(entry, false), entry.romanization || '', entry.customOrthography || '', entry.phonetics, entry.meaning,
                 entry.partOfSpeech, entry.gender || '', entry.example,
                 entry.synonyms ? entry.synonyms.join(';') : '', 
                 entry.etymology && entry.etymology.roots ? entry.etymology.roots.map(r => r.wordId ? `id:${r.wordId}` : `${r.customRoot}(${r.sourceLang})`).join(' | ') : '',
